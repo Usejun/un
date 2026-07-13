@@ -24,7 +24,9 @@ public class Stru(UnType type, string[] names) : Obj(type)
         return this;
     }
 
-    public override Str ToStr() => Str.From($"{Type}({string.Join(", ", names.Select(name => $"{name}: {Members[name].ToStr().As<Str>().Value}"))})");
+    public override Str ToStr() => Str.From($"{Type}(" +
+        $"{string.Join(", ", names.Select(name => $"{name}: " +
+        $"{Str.To(Members[name]).Value}"))})");
 
     public override Obj Add(Obj other) => other switch
     {
@@ -58,7 +60,7 @@ public class Stru(UnType type, string[] names) : Obj(type)
         return list.Spread();
     }
 
-    public override Bool Eq(Obj other)
+    public override Obj Eq(Obj other)
     {
         if (Type != other.Type)
             return Bool.False;
@@ -67,8 +69,14 @@ public class Stru(UnType type, string[] names) : Obj(type)
 
         foreach (var name in allNames)
         {
-            if (Members[name].NEq(other.Members[name]).As<Bool>().Value)
+            var neq = Members[name].NEq(other.Members[name]);
+
+            if (neq.As<Bool>(out var isNotEqual) && isNotEqual.Value)
                 return Bool.False;
+            else if (neq.As<Err>(out _))
+                return neq;
+            else 
+                return new Err($"equals operand is must be a boolean");
         }
 
         return Bool.True;

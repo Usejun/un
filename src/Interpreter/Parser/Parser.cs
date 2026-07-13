@@ -34,31 +34,13 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         return true;
     }
 
-    private Token Expect(TokenType type)
+    private Token Expect(TokenType type, string msg)
     {
         if (Current.Type != type)
-            throw new Panic($"expected {type}, got {Current.Type}");
+            throw new Error(msg, Current.Start, Current.Length, source);
 
         return Next();
     }
-
-    private void Skips(params TokenType[] types)
-    {
-        while (true) 
-        {
-            bool flag = false;
-
-            foreach (var type in types)
-            {
-                if (flag) break;
-                flag = Match(type);
-            }
-
-            if (!flag) break;
-        }
-    }
-
-    private void SkipTrivia() => Skips(TokenType.NewLine, TokenType.Indent, TokenType.Dedent);
 
     private void SkipNewLines()
     {
@@ -116,7 +98,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseAnnotation()
     {
-        var at = Expect(TokenType.At);
+        var at = Expect(TokenType.At, "expected '@' to start an annotation");
         var expr = ParseExpression();
 
         return new Node(at.Start, GetLength(at, expr), NodeKind.Annotation, children: [expr]);
@@ -127,7 +109,10 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         var annotations = new List<Node>();
 
         while (Current.Type == TokenType.At)
+        {
             annotations.Add(ParseAnnotation());
+            SkipNewLines();
+        }
 
         return annotations;
     }
@@ -153,24 +138,68 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         return path;
     }
 
-    private Node ParseUse()
+    private Node ParseUseImports()
     {
-        var keyword = Expect(TokenType.Use);
-        var path = ParseUsePath();
+        List<Node> imports = [];
 
-        if (Match(TokenType.As))
+        if (Match(TokenType.Asterisk))
         {
-            var alias = ParseIdentifier();
+            imports.Add(new Node(Previous().Start, Previous().Length, NodeKind.Unary, TokenType.Wildcard));
+        }
+        else
+        {
+            do
+            {
+                var name = ParseIdentifier();
 
-            return new Node(keyword.Start, GetLength(keyword, alias), NodeKind.Use, children: [path, alias]);
+                if (Match(TokenType.As))
+                {
+                    var alias = ParseIdentifier();
+
+                    imports.Add(new Node(name.Start, GetLength(name, alias), NodeKind.Pair, children: [name, alias]));
+                }
+                else
+                {
+                    imports.Add(name);
+                }
+
+            } while (Match(TokenType.Comma));
         }
 
-        return new Node(keyword.Start, GetLength(keyword, path), NodeKind.Use, children: [path]);
+        return new Node(imports[0].Start, imports[^1].Length, NodeKind.Tuple, children: [.. imports]);
+    }
+
+    private Node ParseUse()
+    {
+        var keyword = Expect(TokenType.Use, "expected 'use' keyword");
+        var path = ParseUsePath();
+
+        Node? imports = null;
+        Node? alias = null;
+
+        if (Match(TokenType.LBrace))
+        {
+            imports = ParseUseImports();
+            Expect(TokenType.RBrace, "expected '}' to close the use member");
+        }
+
+        if (Match(TokenType.As))
+            alias = ParseIdentifier();
+
+        var children = new List<Node> { path };
+
+        if (imports != null)
+            children.Add(imports);
+
+        if (alias != null)
+            children.Add(alias);
+
+        return new Node(keyword.Start, GetLength(keyword, alias ?? imports ?? path), NodeKind.Use, children: [.. children]);
     }
 
     private Node ParseUsing()
     {
-        var keyword = Expect(TokenType.Using);
+        var keyword = Expect(TokenType.Using, "expected 'using' keyword");
         var expr = ParseAssignment();
 
         if (expr.Kind != NodeKind.Assign)
@@ -181,7 +210,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseClass(List<Node> annotations)
     {
-        var keyword = Expect(TokenType.Class);
+        var keyword = Expect(TokenType.Class, "expected 'class' keyword");
         var name = ParseIdentifier();
 
         Node? parameters = null;
@@ -252,11 +281,11 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseEnum(List<Node> annotations)
     {
-        var keyword = Expect(TokenType.Enum);
+        var keyword = Expect(TokenType.Enum, "expected 'enum' keyword");
         var name = ParseIdentifier();
 
-        Expect(TokenType.NewLine);
-        Expect(TokenType.Indent);
+        Expect(TokenType.NewLine, "expected newline after enum name");
+        Expect(TokenType.Indent, "expected indented enum members");
 
         var members = new List<Node>();
 
@@ -282,7 +311,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
             SkipNewLines();
         }
 
-        var closer = Expect(TokenType.Dedent);
+        var closer = Expect(TokenType.Dedent, "expected end of enum block");
 
         return new Node(keyword.Start, GetLength(keyword, closer), NodeKind.Enum, children: [name, .. members])
         {
@@ -292,7 +321,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseIf()
     {
-        var keyword = Expect(TokenType.If);
+        var keyword = Expect(TokenType.If, "expected 'if' keyword");
 
         var cases = new List<Node>();
 
@@ -336,7 +365,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseMatchBraceBody()
     {
-        Expect(TokenType.LBrace);
+        Expect(TokenType.LBrace, "expected '{' to start match body");
 
         var cases = new List<Node>();
 
@@ -346,7 +375,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         {
             var pattern = ParsePattern();
 
-            Expect(TokenType.Return);
+            Expect(TokenType.Return, "expected '->' after match pattern");
 
             var body = ParseBinary();
 
@@ -361,7 +390,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseMatch()
     {
-        var keyword = Expect(TokenType.Match);
+        var keyword = Expect(TokenType.Match, "expected 'match' keyword");
 
         var expr = ParseExpression();
         var body = ParseMatchBraceBody();
@@ -371,10 +400,10 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseFor()
     {
-        var keyword = Expect(TokenType.For);
+        var keyword = Expect(TokenType.For, "expected 'for' keyword");
         var target = ParsePattern();
 
-        Expect(TokenType.In);
+        Expect(TokenType.In, "expected 'in' after for target");
 
         var iterable = ParseExpression();
         SkipNewLines();
@@ -385,7 +414,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseWhile()
     {
-        var keyword = Expect(TokenType.While);
+        var keyword = Expect(TokenType.While, "expected 'while' keyword");
 
         var condition = ParseExpression();
         var body = ParseBlock();
@@ -395,7 +424,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseTry()
     {
-        var keyword = Expect(TokenType.Try);
+        var keyword = Expect(TokenType.Try, "expected 'try' keyword");
 
         var body = ParseBlock();
 
@@ -440,7 +469,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseDefer()
     {
-        var keyword = Expect(TokenType.Defer);
+        var keyword = Expect(TokenType.Defer, "expected 'defer' keyword");
 
         Node body;
 
@@ -462,21 +491,21 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseBreak()
     {
-        var keyword = Expect(TokenType.Break);
+        var keyword = Expect(TokenType.Break, "expected 'break' keyword");
 
         return new Node(keyword.Start, keyword.Length, NodeKind.Break);
     }
 
     private Node ParseSkip()
     {
-        var keyword = Expect(TokenType.Skip);
+        var keyword = Expect(TokenType.Skip, "expected 'skip' keyword");
 
         return new Node(keyword.Start, keyword.Length, NodeKind.Skip);
     }
 
     private Node ParseReturn()
     {
-        var keyword = Expect(TokenType.Return);
+        var keyword = Expect(TokenType.Return, "expected '->' keyword");
 
         if (IsEndOfStatement)
             return new Node(keyword.Start, keyword.Length, NodeKind.Return);
@@ -513,27 +542,14 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
     {
         var left = ParsePattern();
 
-        if (Current.Type is not (
-            TokenType.Assign or
-            TokenType.PlusAssign or
-            TokenType.MinusAssign or
-            TokenType.AsteriskAssign or
-            TokenType.SlashAssign or
-            TokenType.DoubleSlashAssign or
-            TokenType.DoubleAsteriskAssign or
-            TokenType.PercentAssign or
-            TokenType.BAndAssign or
-            TokenType.BOrAssign or
-            TokenType.BXorAssign or
-            TokenType.LeftShiftAssign or
-            TokenType.RightShiftAssign or
-            TokenType.DoubleQuestionAssign))
-        {
+        if (!IsAssignmentOperator(Current.Type))
             return left;
-        }
 
         var op = Next();
         var right = ParseComma();
+
+        if (IsAssignmentOperator(Current.Type))
+            throw new Error("assignment chaining is not supported", Current.Start, Current.Length, source);
 
         return new Node(left.Start, right.Start + right.Length - left.Start, NodeKind.Assign, op.Type, left, right);
     }
@@ -549,8 +565,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
             if (precedence <= parentPrecedence)
                 break;
 
-            var op = Next();
-            SkipTrivia();
+            var op = Next();            
             var right = ParseBinary(precedence);
 
             left = new Node(left.Start, right.Start + right.Length - left.Start, NodeKind.Binary, op.Type, left, right);
@@ -590,10 +605,16 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
                         Next(); 
                         var member = ParseIdentifier();
 
-                        expr = new Node(expr.Start,
-                            GetLength(expr, member),
-                            NodeKind.Property,
-                            children: [expr, member]);
+                        expr = new Node(expr.Start, GetLength(expr, member), NodeKind.Property, children: [expr, member]);
+
+                        continue;
+                    }
+
+                case TokenType.FString:
+                    {
+                        var template = ParseFString();
+
+                        expr = new Node(expr.Start, GetLength(expr, template), NodeKind.Tagged, children: [expr, template]);
 
                         continue;
                     }
@@ -672,9 +693,9 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseCall(Node expr)
     {
-        var opener = Expect(TokenType.LParen);
+        var opener = Expect(TokenType.LParen, "expected '(' before arguments");
         var args = ParseArguments();
-        var closer = Expect(TokenType.RParen);
+        var closer = Expect(TokenType.RParen, "expected ')' after arguments");
 
         var tuple = new Node(opener.Start, GetLength(opener, closer), NodeKind.Tuple, children: [.. args]);
 
@@ -683,7 +704,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseIndexOrSlice(Node expr)
     {
-        var lbrack = Expect(TokenType.LBrack);
+        var lbrack = Expect(TokenType.LBrack, "expected '[' before index or slice");
 
         Node? start = null;
         Node? end = null;
@@ -705,12 +726,12 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         }
         else
         {
-            var rbrack = Expect(TokenType.RBrack);
+            var rbrack = Expect(TokenType.RBrack, "expected ']' after index");
 
             return new Node(expr.Start, GetLength(expr, rbrack), NodeKind.Index, children: [expr, start!]);
         }
 
-        var rbrack2 = Expect(TokenType.RBrack);
+        var rbrack2 = Expect(TokenType.RBrack, "expected ']' to close slice");
 
         return new Node(expr.Start, GetLength(expr, rbrack2), NodeKind.Slice, children: [expr, start!, end!, step!]);
     }
@@ -735,7 +756,8 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseIdentifier()
     {
-        var token = Expect(TokenType.Identifier);
+        var token = Expect(TokenType.Identifier, "expected identifier");
+
         return new Node(token.Start, token.Length, NodeKind.Identifier)
         {
             Value = GetText(token.Start, token.Length)
@@ -744,7 +766,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseFString()
     {
-        var token = Expect(TokenType.FString);
+        var token = Expect(TokenType.FString, "expected '`' to start an f-string");
         var raw = GetText(token.Start, token.Length);
 
         int quoteLength = raw.StartsWith("```") ? 3 : 1;
@@ -839,16 +861,32 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
         return new Node(token.Start, token.Length, kind)
         {
-            Value = kind switch 
+            Value = kind switch
             {
-                NodeKind.Integer => long.Parse(text.Replace("_", "")),
-                NodeKind.Float => double.Parse(text.Replace("_", ""), CultureInfo.InvariantCulture),
+                NodeKind.Integer => ParseInteger(text),
+                NodeKind.Float => ParseFloat(text),
                 NodeKind.String => Unescape(RemoveQuotes(text)),
                 NodeKind.Boolean => text == "true",
                 NodeKind.None => null,
-                _ => new Error($"invalid literal {kind}", token.Start, token.Length, source)
+                _ => throw new Error($"invalid literal {kind}", token.Start, token.Length, source)
             }
         };
+
+        long ParseInteger(string text)
+        {
+            if (long.TryParse(text.Replace("_", ""), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+                return value;
+
+            throw new Error("integer literal is too large", token.Start, token.Length, source);
+        }
+
+        double ParseFloat(string text)
+        {
+            if (double.TryParse(text.Replace("_", ""), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+                return value;
+
+            throw new Error("invalid floating-point literal", token.Start, token.Length, source);
+        }
     }
 
     private List<Node> ParseExpressionList(TokenType end)
@@ -860,14 +898,34 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
         while (true)
         {
-            SkipTrivia();
-
             if (Current.Type == end)
                 break;
 
             items.Add(ParseExpression());
 
-            SkipTrivia();
+            if (!Match(TokenType.Comma))
+                break;
+        }
+
+        return items;
+    }
+
+    private List<Node> ParseTupleItems()
+    {
+        var items = new List<Node>();
+
+        while (Current.Type != TokenType.RParen)
+        {
+            var expr = ParseExpression();
+
+            if (expr.Kind == NodeKind.Identifier && Match(TokenType.Assign))
+            {
+                var value = ParseExpression();
+
+                expr = new Node(expr.Start, GetLength(expr, value), NodeKind.Pair, default, expr, value);
+            }
+
+            items.Add(expr);
 
             if (!Match(TokenType.Comma))
                 break;
@@ -878,41 +936,36 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseTuple()
     {
-        var opener = Expect(TokenType.LParen);
-        var values = ParseExpressionList(TokenType.RParen);
-        var closer = Expect(TokenType.RParen);
-
-        if (values.Count == 1)
-            return values[0];
+        var opener = Expect(TokenType.LParen, "expected '(' before tuple items");
+        var values = ParseTupleItems();
+        var closer = Expect(TokenType.RParen, "expected ')' after tuple items");
 
         if (values.Count == 0)
             return new Node(opener.Start, GetLength(opener, closer), NodeKind.Tuple);
+
+        if (values.Count == 1 && values[0].Kind != NodeKind.Pair)
+            return values[0];
 
         return new Node(opener.Start, GetLength(opener, closer), NodeKind.Tuple, children: [.. values]);
     }
 
     private Node ParseDictOrSet()
     {
-        var opener = Expect(TokenType.LBrace);
+        var opener = Expect(TokenType.LBrace, "expected '{'");
+
         var values = new List<Node>();
 
         Token closer;
 
-        SkipTrivia();
-
         if (Current.Type == TokenType.RBrace)
         {
             closer = Next();
-            return new Node(opener.Start, GetLength(opener, closer), NodeKind.Set);
+            return new Node(opener.Start, GetLength(opener, closer), NodeKind.Dict);
         }
-
-        SkipTrivia();
 
         var firstKey = ParseExpression();
 
         NodeKind kind;
-
-        SkipTrivia();
 
         if (Match(TokenType.Colon))
             kind = NodeKind.Dict;
@@ -925,8 +978,6 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         }
         else
         {
-            SkipTrivia();
-
             var value = ParseExpression();
 
             values.Add(new Node(firstKey.Start, GetLength(firstKey, value), NodeKind.Pair, children: [firstKey, value]));
@@ -934,14 +985,10 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
         while (true)
         {
-            SkipTrivia();
-
             if (Current.Type == TokenType.RBrace)
                 break;
 
-            Expect(TokenType.Comma);
-
-            SkipTrivia();
+            Expect(TokenType.Comma, "expected ',' between elements");
 
             if (Current.Type == TokenType.RBrace)
                 break;
@@ -950,51 +997,38 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
             if (kind == NodeKind.Set)
             {
-                SkipTrivia();
-
                 if (Current.Type == TokenType.Colon)
-                    throw new Error("set cannot contain key-value pair", Current.Start, Current.Length, context.Source);
+                    throw new Error("set cannot contain key-value pairs", Current.Start, Current.Length, context.Source);
 
                 values.Add(key);
             }
             else
             {
-                SkipTrivia();
-                Expect(TokenType.Colon);
-
-                SkipTrivia();
+                Expect(TokenType.Colon, "expected ':' after dictionary key");
 
                 var value = ParseExpression();
 
-                values.Add(new Node(
-                    key.Start,
-                    GetLength(key, value),
-                    NodeKind.Pair,
-                    children: [key, value]));
+                values.Add(new Node(key.Start, GetLength(key, value), NodeKind.Pair, children: [key, value]));
             }
         }
 
-        closer = Expect(TokenType.RBrace);
+        closer = Expect(TokenType.RBrace, "expected '}' to close collection");
 
-        return new Node(
-            opener.Start,
-            GetLength(opener, closer),
-            kind,
-            children: [.. values]);
+        return new Node(opener.Start, GetLength(opener, closer), kind, children: [.. values]);
     }
 
     private Node ParseList()
     {
-        var opener = Expect(TokenType.LBrack);
+        var opener = Expect(TokenType.LBrack, "expected '[' to open list");
         var values = ParseExpressionList(TokenType.RBrack);
-        var closer = Expect(TokenType.RBrack);
+        var closer = Expect(TokenType.RBrack, "expected ']' to close list");
 
         return new Node(opener.Start, GetLength(opener, closer), NodeKind.List, children: [.. values]);
     }
 
     private Node ParseFunction(List<Node> annotations)
     {
-        var func = Expect(TokenType.Func);
+        var func = Expect(TokenType.Func, "expected 'fn' keyword");
         var name = ParseIdentifier(); 
         var parameters = ParseParameters();
         SkipNewLines();
@@ -1008,11 +1042,11 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseLambda()
     {
-        var func = Expect(TokenType.Func);
+        var func = Expect(TokenType.Func, "expected 'fn' keyword");
 
         var parameters = ParseParameters();
 
-        Expect(TokenType.Return);
+        Expect(TokenType.Return, "expected '->' after lambda parameters");
 
         var expr = ParseExpression();
         var ret = new Node(expr.Start, expr.Length, NodeKind.Return, children: [expr]);
@@ -1023,7 +1057,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Node ParseParameters()
     {
-        var opener = Expect(TokenType.LParen);
+        var opener = Expect(TokenType.LParen, "expected '(' before parameters");
         var parameters = new List<Node>();
 
         if (Current.Type != TokenType.RParen)
@@ -1038,7 +1072,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
             }
         }
 
-        var closer = Expect(TokenType.RParen);
+        var closer = Expect(TokenType.RParen, "expected ')' after parameters");
 
         return new Node(opener.Start, GetLength(opener, closer), NodeKind.Tuple, children: [.. parameters]);
     }
@@ -1077,7 +1111,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
     {
         SkipNewLines();
 
-        Expect(TokenType.Indent);
+        Expect(TokenType.Indent, "expected indented block");
 
         var statements = new List<Node>();
 
@@ -1093,7 +1127,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
             SkipNewLines();
         }
 
-        Expect(TokenType.Dedent);
+        Expect(TokenType.Dedent, "expected end of block");
 
         if (statements.Count == 0)
             return new Node(Current.Start, 0, NodeKind.Block);
@@ -1250,5 +1284,24 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
             _ => false
         };
+    }
+
+    private bool IsAssignmentOperator(TokenType type)
+    {
+        return type is
+            TokenType.Assign or
+            TokenType.PlusAssign or
+            TokenType.MinusAssign or
+            TokenType.AsteriskAssign or
+            TokenType.SlashAssign or
+            TokenType.DoubleSlashAssign or
+            TokenType.DoubleAsteriskAssign or
+            TokenType.PercentAssign or
+            TokenType.BAndAssign or
+            TokenType.BOrAssign or
+            TokenType.BXorAssign or
+            TokenType.LeftShiftAssign or
+            TokenType.RightShiftAssign or
+            TokenType.DoubleQuestionAssign;
     }
 }

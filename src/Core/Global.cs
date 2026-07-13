@@ -1,14 +1,13 @@
 global using Attributes = System.Collections.Generic.Dictionary<string, Un.Object.Obj>;
 global using Map = System.Collections.Generic.Dictionary<string, Un.Object.Obj>;
 
+using System.Reflection;
+using System.Reflection.Metadata;
 using Un.Object;
-using Un.Object.Flow;
-using Un.Object.Util;
-using Un.Object.Iter;
 using Un.Object.Function;
 using Un.Object.Primitive;
-using Un.Object.Collections;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un;
 
@@ -20,171 +19,178 @@ public static class Global
 
     private static readonly Scope scope = new();
     private static readonly Scope classes = new();
-
-    public static Attributes Package { get; private set; } = [];
+    private static readonly Dictionary<string, Attributes> originalClasses = [];
+    private static readonly Dictionary<string, Type> natives = Assembly.GetExecutingAssembly().GetTypes()!
+                                                      .Where(t => t.GetCustomAttribute<NativeModuleAttribute>() is not null)
+                                                      .ToDictionary(t => t.GetCustomAttribute<NativeModuleAttribute>()!.Name, t => t);
 
     public static void Init(string path)
     {
         PATH = path;
 
-        var std = new Std();
-
-        InitTypeByName<Int>();
-        InitTypeByName<Float>();
-        InitTypeByName<Bool>();
-        InitTypeByName<Str>();
-        InitTypeByName<Date>();
-        InitTypeByName<List>();
-        InitTypeByName<Tup>("tuple");
-        InitTypeByName<Set>();
-        InitTypeByName<Dict>();
-        InitTypeByName<Iters>("iter");
-        InitTypeByName<Future>();
-        InitTypeByName<Time>();
-        InitTypeByName<Object.Util.Timer>();
-        InitTypeByName<Flow>();
-        InitTypeByName<Json>();
-        InitTypeByName<Counter>();
-        InitTypeByName<Reverse>();
+        Builtin();
 
         scope.Set("__name__", Str.From("__main__"));
-
-        foreach (var (key, value) in std.GetOriginalMembers())
-            scope.Set(key, value);
-
-        foreach (var (key, value) in std.GetOriginalMethods())
-            scope.Set(key, value);
     }
 
-    public static void InitTypeFromInstance<T>(T obj)
-        where T : Obj, new()
+    private static void Builtin()
     {
-        var name = obj.Type.Name;
+        var functions = Assembly.GetExecutingAssembly().GetTypes()!.Where(t => t.GetCustomAttribute<BuiltinModuleAttribute>() is not null);
 
-        classes[name].Members = obj.GetOriginal();
-
-        if (obj is IPack pack)
+        foreach (var type in functions)
         {
-            foreach (var (key, value) in pack.GetOriginalMembers())
-                scope.Set(key, value);
+            var module = type.GetCustomAttribute<BuiltinModuleAttribute>()!;
 
-            var group = pack.GetOriginalMethods();
+            foreach (var (name, fn) in CreateMethod(type))
+                scope.Set(name, fn);
+        }
 
-            if (group.Count != 0)
-                scope.Set(name, new Obj(UnType.Create(name))
-                {
-                    Members = group,
-                });
+        var primitives = Assembly.GetExecutingAssembly().GetTypes()!.Where(t => t.GetCustomAttribute<BuiltinTypeAttribute>() is not null);
+
+        foreach (var type in primitives)
+        {
+            var attr = type.GetCustomAttribute<BuiltinTypeAttribute>()!;
+            Obj instance = (Obj)Activator.CreateInstance(type)!;
+            
+            originalClasses.Add(attr.Name, CreateMethod(type));
+            classes.Set(attr.Name, instance);
         }
     }
 
-    public static void InitTypeByName<T>(string name = null!)
-        where T : Obj, new()
+    public static void Include(string name, string? moduleAlias = null, IReadOnlyList<(string Name, string Alias)>? imports = null)
     {
-        var t = new T();
+        var map = BuildNativeMap(name);
 
-        classes.Set(name ?? typeof(T).Name.ToLower(), new T
-        {
-            Members = t.GetOriginal()
-        });
+        ImportMap(map, name, name, moduleAlias, imports);
     }
 
-    public static void Include(string name)
+    public static void Import(string[] path, string? moduleAlias = null, IReadOnlyList<(string Name, string Alias)>? imports = null)
     {
-        InitTypeFromInstance(classes[name]);
+        var map = Load(Path.Combine(PATH, Path.Combine(path)));
+
+        ImportMap(map, string.Join('.', path), path[^1], moduleAlias, imports);
     }
 
-    public static void Import(string[] path, string nickname, string[] parts)
+    private static void ImportMap(Map map, string moduleName, string moduleObjectName, string? moduleAlias, IReadOnlyList<(string Name, string Alias)>? imports)
     {
-        var map = Load(Path.Combine(PATH, string.Join('/', path)));
+        const string Wildcard = "*";
 
-        if (parts.Length != 0)
+        if (imports != null)
         {
-            var set = parts.ToHashSet();
-            map = map.Where(x => set.Contains(x.Key)).ToDictionary();
-        }
-
-        if (nickname == "*")
-        {
-            ImportSpread(map);
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(nickname))
-        {
-            ImportAlias(map, nickname);
-            return;
-        }
-
-        ImportNamespace(path, map);
-    }
-
-    private static void ImportSpread(Map map)
-    {
-        foreach (var (key, value) in map)
-            if (value is Obj obj)
-                scope.Set(key, obj);
-    }
-
-    private static void ImportAlias(Map map, string nickname)
-    {
-        if (scope.ContainsKey(nickname))
-            throw new Panic($"'{nickname}' already exists in the global scope");
-
-        scope.Set(nickname, new Obj(UnType.Create(nickname))
-        {
-            Members = map
-        });
-    }
-
-    private static void ImportNamespace(string[] path, Map map)
-    {
-        var scope = GetGlobalScope();
-
-        Obj top;
-
-        if (scope.Get(path[0], out var existing))
-            top = existing;
-        else
-        {
-            top = new Obj(UnType.Create(path[0]));
-            scope.Set(path[0], top);
-        }
-
-        for (int i = 1; i < path.Length; i++)
-        {
-            if (!top.Members.TryGetValue(path[i], out var child))
+            if (moduleAlias != null)
             {
-                child = new Obj(UnType.Create(path[i]));
-                top.Members[path[i]] = child;
+                if (scope.ContainsKey(moduleAlias))
+                    throw new Panic($"'{moduleAlias}' already exists in the global scope");
+
+                var module = new Obj(UnType.Create(moduleAlias));
+
+                foreach (var (name, alias) in imports)
+                {
+                    if (name == Wildcard)
+                    {
+                        foreach (var (k, v) in map)
+                        {
+                            if (!module.Members.TryAdd(k, v))
+                                throw new Panic($"'{k}' already exists in module '{moduleAlias}'");
+                        }
+
+                        continue;
+                    }
+
+                    if (!map.TryGetValue(name, out var value))
+                        throw new Panic($"module '{moduleName}' has no member '{name}'");
+
+                    if (!module.Members.TryAdd(alias, value))
+                        throw new Panic($"'{alias}' already exists in module '{moduleAlias}'");
+                }
+
+                scope.Set(moduleAlias, module);
+                return;
             }
 
-            top = child;
+            foreach (var (name, alias) in imports)
+            {
+                if (name == Wildcard)
+                {
+                    foreach (var (k, v) in map)
+                    {
+                        if (scope.ContainsKey(k))
+                            throw new Panic($"'{k}' already exists in the global scope");
+
+                        scope.Set(k, v);
+                    }
+
+                    continue;
+                }
+
+                if (!map.TryGetValue(name, out var value))
+                    throw new Panic($"module '{moduleName}' has no member '{name}'");
+
+                if (scope.ContainsKey(alias))
+                    throw new Panic($"'{alias}' already exists in the global scope");
+
+                scope.Set(alias, value);
+            }
+
+            return;
         }
 
-        top.Members = map;
+        var objectName = moduleAlias ?? moduleObjectName;
+
+        if (scope.ContainsKey(objectName))
+            throw new Panic($"'{objectName}' already exists in the global scope");
+
+        scope.Set(objectName, new Obj(UnType.Create(objectName))
+        {
+            Members = new(map)
+        });
+    }
+
+    private static Map BuildNativeMap(string name)
+    {
+        var type = natives.GetValueOrDefault(name) ?? throw new Panic($"native module '{name}' not found");
+
+        foreach (var _class in type.GetCustomAttribute<NativeModuleAttribute>()!.Types)
+        {
+            var className = _class.GetCustomAttribute<NativeTypeAttribute>()!.Name!;
+            if (natives.TryGetValue(className, out var t))
+                originalClasses.Add(className, BuildNativeMap(className));
+            else
+                originalClasses.Add(className, CreateMethod(_class));
+        }
+
+        return CreateMethod(type);
     }
 
     private static Map Load(string fullPath)
     {
         Map map = [];
 
+        var filePath = fullPath.EndsWith(".un") ? fullPath : fullPath + ".un";
+
+        if (File.Exists(filePath))
+        {
+            LoadFile(filePath);
+            return map;
+        }
+  
         if (Directory.Exists(fullPath))
         {
+            var mod = Path.Combine(fullPath, "mod.un");
+
+            if (File.Exists(mod))
+            {
+                LoadFile(mod);
+                return map;
+            }
+
             foreach (var file in Directory.GetFiles(fullPath, "*.un"))
                 LoadFile(file);
 
             return map;
         }
 
-        var filePath = fullPath.EndsWith(".un") ? fullPath : fullPath + ".un";
-
-        if (!File.Exists(filePath))
-            throw new Panic($"file or directory '{fullPath}' not found");
-
-        LoadFile(filePath);
-
-        return map;
+        throw new Panic($"module '{fullPath}' not found");
 
         void LoadFile(string file)
         {
@@ -202,6 +208,55 @@ public static class Global
             }
         }
     }
+
+    private static Map CreateMethod(Type type)
+    {
+        var map = new Map();
+
+        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
+        {
+            var native = method.GetCustomAttribute<NativeAttribute>();
+            if (native is null)
+                continue;
+
+            var fn = new NFn
+            {
+                Name = native.Name ?? method.Name,
+                Func = args =>
+                {
+                    var parameters = method.GetParameters();
+                    var values = new object?[parameters.Length];
+
+                    for (int i = 0; i < parameters.Length; i++)
+                        values[i] = args[parameters[i].Name!];
+
+                    return (Obj)method.Invoke(null, values)!;
+                }
+            };
+
+            foreach (var parameter in method.GetParameters())
+            {
+                if (parameter.GetCustomAttribute<SelfAttribute>() is not null)
+                    continue;
+
+                var info = parameter.GetCustomAttribute<ArgInfoAttribute>();
+
+                fn.Args.Add(new Arg(parameter.Name!)
+                {
+                    IsEssential = info?.Essential ?? false,
+                    IsOptional = info?.Optional ?? false,
+                    IsPositional = info?.Positional ?? false,
+                });
+            }
+
+            map.Add(fn.Name, fn);
+
+        }
+
+        return map;
+    }
+
+    public static bool IsNative(string name) => natives.ContainsKey(name);
 
     public static bool IsClass(string name) => classes.ContainsKey(name);
 
@@ -234,21 +289,30 @@ public static class Global
         return false;
     }
 
+    public static bool TryGetClass(BaseType type, out Obj obj)
+    {
+        if (type is UnType unType)
+            return classes.Get(unType.Name, out obj);
+        else if (type is CollectionType colType)
+            return classes.Get(colType.Kind.Name, out obj);
+
+        obj = null!;
+        return false;
+    }
+
     public static void SetClass(string name, Obj obj)
     {
         classes[name] = obj;
     }
 
-
     public static bool TryGetOriginalValue(string type, string name, out Obj? value)
     {
-        if (classes.Get(type, out var original))
-            return original.Members.TryGetValue(name, out value);
+        if (originalClasses.TryGetValue(type, out var original))
+            return original.TryGetValue(name, out value);
 
         value = null!;
         return false;
     }
-
 
     public static Obj GetGlobalVariable(string name) => scope.Get(name, out var value) ? value : new Err($"global variable '{name}' not found");
 
@@ -256,9 +320,7 @@ public static class Global
 
     public static bool TryGetGlobalVariable(string name, out Obj obj) => scope.Get(name, out obj!);
 
-
     public static Scope GetGlobalScope() => scope;
-
 
     public static Map New(this Map map)
     {

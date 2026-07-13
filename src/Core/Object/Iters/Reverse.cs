@@ -17,12 +17,9 @@ public class Reverse : Iters
 
     public override Obj Init(Tup args) => args switch
     {
-        { Count: 1 } => new Reverse(args[0].Iter().As<Iters>().Value.Reverse()),
-        _ => new Err($"invaild '{Type}' initialize"),
+        { Count: 1 } when args[0].Iter().As<Iters>(out var iter) => new Reverse(iter.Value.Reverse()),
+        _ => new Err($"invalid '{Type}' initialization"),
     };
 
-    public override Obj Clone() => new Reverse(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Reverse Clone() => new(Value);
 }

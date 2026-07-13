@@ -14,4 +14,6 @@ public class Future(Task<Obj> state) : Obj(UnType.Future)
     }
 
     public Obj Wait() => State.Result;
+
+    public override Future Clone() => new(State);
 }

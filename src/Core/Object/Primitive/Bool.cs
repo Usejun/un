@@ -1,8 +1,10 @@
 using Un.Object.Collections;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
+[BuiltinType("bool")]
 public class Bool : Val<bool>
 {
     public readonly static Bool True = new(true);
@@ -18,7 +20,7 @@ public class Bool : Val<bool>
         _ => False
     };
 
-    public override Obj Not() => Value ? False : True;
+    public override Bool Not() => Value ? False : True;
 
     public override Obj Xor(Obj other) => Value ? other.Not() : this;
 
@@ -26,15 +28,9 @@ public class Bool : Val<bool>
 
     public override Str ToStr() => Str.From(Value ? "true" : "false");
 
-    public override Obj Copy() => new Bool(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Bool Copy() => From(Value);
 
-    public override Obj Clone() => new Bool(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Bool Clone() => From(Value);
 
     public override Bool ToBool() => Value ? True : False;
 

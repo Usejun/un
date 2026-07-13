@@ -1,12 +1,13 @@
 using Un.Object.Collections;
-using Un.Object.Function;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
+[BuiltinType("int")]
 public class Int : Val<long>
 {
-    private static Int[] caches = [.. Enumerable.Range(-5, 262).Select(i => new Int(i))];
+    private readonly static Int[] caches = [.. Enumerable.Range(-5, 262).Select(i => new Int(i))];
 
     public Int() : this(0) {}
 
@@ -14,7 +15,7 @@ public class Int : Val<long>
 
     public override Obj Init(Tup args) => args switch
     {
-        { Count: 0 } => new Int(),
+        { Count: 0 } => From(0),
         { Count: 1 } => args[0].ToInt(),
         _ => new Err($"cannot convert to '{Type}'"),
     };
@@ -69,9 +70,9 @@ public class Int : Val<long>
         _ => new Err($"unsupported operand type(s) for **: 'int' and '{other.Type}'")
     };
 
-    public override Obj Neg() => new Int(-Value);
+    public override Int Neg() => From(-Value);
 
-    public override Obj Pos() => new Int(+Value);
+    public override Int Pos() => From(+Value);
 
     public override Obj BAnd(Obj other) => other switch
     {
@@ -91,7 +92,7 @@ public class Int : Val<long>
         _ => new Err($"unsupported operand type(s) for ^: 'int' and '{other.Type}'")
     };
 
-    public override Obj BNot() => new Int(~Value);
+    public override Int BNot() => From(~Value);
 
     public override Obj LShift(Obj other) => other switch
     {
@@ -149,9 +150,9 @@ public class Int : Val<long>
         _ => new Err($"unsupported operand type(s) for !=: 'int' and '{other.Type}'")
     };
 
-    public override Obj Len() => new Int(1);
+    public override Int Len() => From(1);
 
-    public override Int ToInt() => new(Value);
+    public override Int ToInt() => From(Value);
 
     public override Float ToFloat() => new(Value);
 
@@ -159,15 +160,9 @@ public class Int : Val<long>
 
     public override Bool ToBool() => Bool.From(Value != 0);
 
-    public override Obj Copy() => new Int(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Int Copy() => From(Value);
 
-    public override Obj Clone() => new Int(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Int Clone() => From(Value);
 
     public static Int From(long value)
     {

@@ -23,6 +23,7 @@ public sealed class Evaluator(Context context)
             NodeKind.Float => new Float((double)(node.Value ?? throw new Error("invalid float object", node, context.Source))),
             NodeKind.String => Str.From((string)(node.Value ?? throw new Error("invalid str object", node, context.Source))),
             NodeKind.FString => EvalFString(node),
+            NodeKind.Tagged => EvalTaggedTemplate(node),
             NodeKind.None => Obj.None,
 
             NodeKind.Assign => EvalAssign(node),
@@ -165,13 +166,13 @@ public sealed class Evaluator(Context context)
 
         if (node.Operator == TokenType.And)
         {
-            var cond = Unwrap(left.ToBool(), node).As<Bool>().Value;
+            var cond = Unwrap(left.ToBool(), node).As<Bool>(out var condValue) && condValue.Value;
             return cond ? Eval(node.Children[1]) : left;
         }
 
         if (node.Operator == TokenType.Or)
         {
-            var cond = Unwrap(left.ToBool(), node).As<Bool>().Value;
+            var cond = Unwrap(left.ToBool(), node).As<Bool>(out var condValue) && condValue.Value;
 
             return cond ? left : Eval(node.Children[1]);
         }
@@ -233,15 +234,19 @@ public sealed class Evaluator(Context context)
             switch (arg.Kind)
             {
                 case NodeKind.Spread:
-                    var unpack = Unpack(Eval(arg.Children[0]));
+                    {
+                        var unpack = Unpack(Eval(arg.Children[0]));
 
-                    if (unpack[0] is Err err)
-                        throw new Error(err.Message, arg, context.Source, header: err.Header);
+                        if (unpack.Length == 0)
+                            break;
 
-                    foreach (var value in unpack)
-                        args.Add(("", value));
-                    break;
+                        if (unpack[0] is Err err)
+                            throw new Error(err.Message, arg, context.Source, header: err.Header);
 
+                        foreach (var value in unpack)
+                            args.Add(("", value));
+                        break;
+                    }
                 case NodeKind.KwSpread:
                     {
                         var value = Eval(arg.Children[0]);
@@ -250,7 +255,7 @@ public sealed class Evaluator(Context context)
                             throw new Error("** argument must be dict", arg, context.Source);
 
                         foreach (var (k, v) in dict.Value)
-                            args.Add((k.As<Str>().Value, v));
+                            args.Add((k.As<Str>(out var str) ? str.Value : k.Repr().Value, v));
 
                         break;
                     }
@@ -260,8 +265,16 @@ public sealed class Evaluator(Context context)
                     break;
 
                 default:
-                    args.Add(("", Eval(arg)));
-                    break;
+                    {
+                        var value = Eval(arg);
+
+                        if (value is Err err)
+                            throw new Error(err.Message, arg, context.Source, header: err.Header);
+
+                        args.Add(("", value));
+                        break;
+
+                    }
             }
         }
 
@@ -293,7 +306,7 @@ public sealed class Evaluator(Context context)
         return result;
     }
 
-    private Fn EvalFunction(Node node)
+    private Obj EvalFunction(Node node)
     {
         var signature = node.Children[0];
         var name = GetText(signature);
@@ -307,7 +320,10 @@ public sealed class Evaluator(Context context)
             Args = Fn.GetArgs(parameters, context),
         };
 
-        fn = EvalAnnotations(fn, node.Annotations!).As<Fn>();
+        if (!EvalAnnotations(fn, node.Annotations!).As<Fn>(out var afn))
+            return new Err("annotation error");
+        
+        fn = afn;
 
         context.Scope.Set(name, fn);
 
@@ -385,7 +401,7 @@ public sealed class Evaluator(Context context)
             case NodeKind.None:
                 {
                     var lit = Eval(pattern);
-                    return lit.Eq(value).ToBool().As<Bool>().Value;
+                    return lit.Eq(value).ToBool().As<Bool>(out var isEqual) && isEqual.Value;
                 }
             default:
                 throw new Error($"invalid pattern {pattern.Kind}", pattern, context.Source);
@@ -415,7 +431,28 @@ public sealed class Evaluator(Context context)
         throw new Error("no match case", node, context.Source);
     }
 
-    private Tup EvalTuple(Node node) => new([.. node.Children.Select(Eval)]);
+    private Tup EvalTuple(Node node)
+    {
+        List<KeyValuePair<string, Obj>> values = [];
+
+        foreach (var child in node.Children)
+        {
+            if (child.Kind == NodeKind.Pair)
+            {
+                var name = GetText(child.Children[0]);
+                var value = Eval(child.Children[1]);
+
+                values.Add(new(name, value));
+
+            }
+            else
+            {
+                values.Add(new(string.Empty, Eval(child)));
+            }
+        }
+
+        return new Tup(values);
+    }
 
     private List EvalList(Node node) => new([.. node.Children.Select(Eval)]);
 
@@ -447,19 +484,55 @@ public sealed class Evaluator(Context context)
     private Obj EvalUse(Node node)
     {
         var path = GetText(node.Children[0]);
-        var splited = path.Split('.');
-        var lastPath = splited[^1];
-        var alias = lastPath;
+        var parts = path.Split('.');
+        var last = parts[^1];
 
-        if (node.Children.Count == 2)        
-            alias = GetText(node.Children[1]);
+        Node? imports = null;
+        string? moduleAlias = null;
 
-        if (!Global.IsClass(lastPath))
-            Global.Import(alias == "*" ? splited[..^1] : splited, alias, []);
+        foreach (var child in node.Children.Skip(1))
+        {
+            switch (child.Kind)
+            {
+                case NodeKind.Tuple:
+                    imports = child;
+                    break;
+
+                case NodeKind.Identifier:
+                    moduleAlias = GetText(child);
+                    break;
+            }
+        }
+
+        List<(string Name, string Alias)>? list = null;
+
+        if (imports != null)
+        {
+            list = [];
+
+            foreach (var child in imports.Children)
+            {
+                if (child.Kind == NodeKind.Pair)
+                {
+                    list.Add((
+                        GetText(child.Children[0]),
+                        GetText(child.Children[1])
+                    ));
+                }
+                else
+                {
+                    var name = GetText(child);
+                    list.Add((name, name));
+                }
+            }
+        }
+
+        if (Global.IsNative(last))
+            Global.Include(last, moduleAlias, list);
         else
-            Global.Include(path);
+            Global.Import(parts, moduleAlias, list);
 
-        return Obj.None;        
+        return Obj.None;
     }
 
     private Obj EvalUsing(Node node)
@@ -602,7 +675,8 @@ public sealed class Evaluator(Context context)
         var iterable = node.Children[1];
         var body = node.Children[2];
 
-        var iter = Eval(iterable).Iter().As<Iters>();
+        if (!Eval(iterable).Iter().As<Iters>(out var iter))
+            throw new Error($"{GetText(iterable)} is not iterable", node, context.Source);
 
         foreach (var item in iter.Value)
         {
@@ -641,7 +715,7 @@ public sealed class Evaluator(Context context)
         {
             var cond = Eval(condition);
 
-            if (!cond.As<Bool>().Value)
+            if (!cond.As<Bool>(out var condValue) || !condValue.Value)
                 break;
 
             try
@@ -674,7 +748,7 @@ public sealed class Evaluator(Context context)
                 var condition = child.Children[0];
                 var body = child.Children[1];
 
-                var condVal = Eval(condition).ToBool().As<Bool>().Value;
+                var condVal = Eval(condition).ToBool().As<Bool>(out var condValue) && condValue.Value;
 
                 if (condVal)
                     return Eval(body);
@@ -709,13 +783,52 @@ public sealed class Evaluator(Context context)
 
         foreach (var child in node.Children)
         {
-            if (child.Kind == NodeKind.String)
-                sb.Append(child.Value);
+            if (child.Kind != NodeKind.String)
+            {
+                Obj o = Eval(child).ToStr();
+
+                if (!o.As<Str>(out var str))
+                    throw new Error("f-string expression must be a string", node, context.Source);
+
+                sb.Append(str.Value);
+            }
             else
-                sb.Append(Eval(child).ToStr().As<Str>().Value);
+                sb.Append(child.Value);
         }
 
         return Str.From(sb.ToString());
+    }
+
+    private Template BuildTemplate(Node node)
+    {
+        var strings = new List<string>();
+        var values = new List<Obj>();
+
+        foreach (var child in node.Children)
+        {
+            if (child.Kind == NodeKind.String)
+            {
+                strings.Add((string)child.Value!);
+            }
+            else
+            {
+                values.Add(Eval(child));
+            }
+        }
+
+        return new Template(strings, values);
+    }
+
+    private Obj EvalTaggedTemplate(Node node)
+    {
+        var tag = Eval(node.Children[0]);
+
+        if (!tag.As<Fn>(out var fn))
+            throw new Error("tagged template target must be a function", node, context.Source);
+
+        var template = BuildTemplate(node.Children[1]);
+
+        return fn.Call(new([new List([..template.Values]), new List([..template.Strings.Select(Str.From)])]));
     }
 
     private Obj EvalAnnotations(Obj obj, IReadOnlyList<Node> annotations)
@@ -836,6 +949,7 @@ public sealed class Evaluator(Context context)
         {
             Tup t => t.Value,
             List l => l.Value,
+            Spreads s => s.Value,
             _ => [new Err($"cannot unpack {obj.GetType().Name}")]
         };
     }

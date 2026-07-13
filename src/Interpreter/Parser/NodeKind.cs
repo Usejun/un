@@ -74,5 +74,6 @@ public enum NodeKind
     Spread,
     KwSpread,
     IfCase,
-    Branch
+    Branch,
+    Tagged
 }

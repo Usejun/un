@@ -2,9 +2,11 @@ using Un.Object.Primitive;
 using Un.Object.Function;
 using Un.Object.Iter;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Collections;
 
+[BuiltinType("dict")]
 public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value, UnType.Dict)
 {
     public Dict() : this([]) { }
@@ -19,7 +21,7 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
 
     public override Int Len() => Int.From(Value.Count);
 
-    public override Obj GetItem(Obj key) => Value.TryGetValue(key, out var value) ? value : new Err($"key '{key.ToStr().As<Str>().Value}' not found in dictionary");
+    public override Obj GetItem(Obj key) => Value.TryGetValue(key, out var value) ? value : new Err($"key '{Str.To(key).Value}' not found in dictionary");
 
     public override Obj SetItem(Obj key, Obj value) => Value[key] = value;
 
@@ -29,11 +31,11 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
         _ => Bool.From(Value.ContainsKey(obj)),
     };
 
-    public override Obj Copy() => this;
+    public override Dict Copy() => this;
 
-    public override Obj Clone() => new Dict(new Dictionary<Obj, Obj>(Value));
+    public override Dict Clone() => new(new Dictionary<Obj, Obj>(Value));
 
-    public override Str ToStr() => Str.From($"{{{string.Join(", ", Value.Select(x => $"{(x.Key.ToStr().As<Str>(out var s) ? s : x.Key.Repr().As<Str>().Value)}: {(x.Value.ToStr().As<Str>(out s) ? s : x.Value.Repr().As<Str>().Value)}"))}}}");
+    public override Str ToStr() => Str.From($"{{{string.Join(", ", Value.Select(x => $"{Str.To(x.Key).Value} {Str.To(x.Value).Value}"))}}}");
 
     public override List ToList() => new([.. Value.Keys.Zip(Value.Values).Select(x => new Tup([x.First, x.Second], ["key", "value"]))]);
 
@@ -47,133 +49,55 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
     {
         foreach (var (key, value) in dict.Value)
         {
-            if (!Value.TryGetValue(key, out var v) || !v.Eq(value).As<Bool>().Value)
+            if (!Value.TryGetValue(key, out var v) || !v.Eq(value).As<Bool>(out var eqResult) || !eqResult.Value)
                 return false;
         }
         return true;
     }
 
-    public override Attributes GetOriginal() => new()
+    [Native(Name = "add")]
+    public static Obj Add(
+        [Self] Dict self,
+        [ArgInfo(Essential = true)] Obj key,
+        [ArgInfo(Essential = true)] Obj value)
     {
-        { "add", new NFn()
-            {
-                Name = "add",
-                Args = [
-                    new Arg("key") { IsEssential = true },
-                    new Arg("value") { IsEssential = true }
-                ],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
+        self.Value.Add(key, value);
+        return None;
+    }
 
-                    self.Value.Add(args["key"], args["value"]);
-                    return None;
-                }
-            }
-        },
-        { "remove", new NFn()
-            {
-                Name = "remove",
-                Args = [
-                    new Arg("key") { IsEssential = true }
-                ],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
+    [Native(Name = "remove")]
+    public static Obj Remove(
+        [Self] Dict self,
+        [ArgInfo(Essential = true)] Obj key)
+        => Bool.From(self.Value.Remove(key));
 
-                    return Bool.From(self.Value.Remove(args["key"]));
-                }
-            }
-        },
-        { "get", new NFn()
-            {
-                Name = "get",
-                Args = [
-                    new Arg("key") { IsEssential = true },
-                    new Arg("default") { IsOptional = true, DefaultValue = None }
-                ],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
+    [Native(Name = "get")]
+    public static Obj Get(
+        [Self] Dict self,
+        [ArgInfo(Essential = true)] Obj key,
+        [ArgInfo(Optional = true)] Obj defaultValue = null!)
+        => self.Value.TryGetValue(key, out var value) ? value : (defaultValue ?? None);
 
-                    return self.Value.TryGetValue(args["key"], out var value) ? value : args["default"];
-                }
-            }
-        },
-        { "contains_key", new NFn()
-            {
-                Name = "contains_key",
-                Args = [
-                    new Arg("key") { IsEssential = true }
-                ],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
+    [Native(Name = "contains_key")]
+    public static Obj ContainsKey(
+        [Self] Dict self,
+        [ArgInfo(Essential = true)] Obj key)
+        => Bool.From(self.Value.ContainsKey(key));
 
-                    return Bool.From(self.Value.ContainsKey(args["key"]));
-                }
-            }
-        },
-        { "contains_value", new NFn()
-            {
-                Name = "contains_value",
-                Args = [
-                    new Arg("value") { IsEssential = true }
-                ],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
+    [Native(Name = "contains_value")]
+    public static Obj ContainsValue([Self] Dict self, [ArgInfo(Essential = true)] Obj value)
+        => Bool.From(self.Value.ContainsValue(value));
 
-                    return Bool.From(self.Value.ContainsValue(args["value"]));
-                }
-            }
-        },
-        { "clear", new NFn()
-            {
-                Name = "clear",
-                Args = [],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
+    [Native(Name = "clear")]
+    public static Obj Clear([Self] Dict self)
+    {
+        self.Value.Clear();
+        return None;
+    }
 
-                    self.Value.Clear();
-                    return None;
-                }
-            }
-        },
-        { "keys", new NFn()
-            {
-                Name = "keys",
-                Args = [],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
+    [Native(Name = "keys")]
+    public static List Keys([Self] Dict self) => new([.. self.Value.Keys]);
 
-                    return new List([.. self.Value.Keys]);
-                }
-            }
-        },
-        { "values", new NFn()
-            {
-                Name = "values",
-                Args = [],
-                Func = (args) =>
-                {
-                    if (!args["self"].As<Dict>(out var self))
-                        return new Err("invalid argument");
-
-                    return new List([.. self.Value.Values]);
-                }
-            }
-        }
-    };
-
-
+    [Native(Name = "values")]
+    public static List Values([Self] Dict self) => new([.. self.Value.Values]);
 }

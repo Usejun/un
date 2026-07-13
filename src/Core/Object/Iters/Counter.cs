@@ -20,12 +20,11 @@ public class Counter : Iters
     public override Obj Init(Tup args) => args switch
     {
         { Count: 0 } => new Counter(),
+        { Count: 1 } and [Int i] => new Counter(i.Value),
         _ => new Err($"invaild '{Type}' initialize"),
     };
 
-    public override Obj Len() => Int.From(long.MaxValue);
-
-    public override Obj Iter() => this;
+    public override Int Len() => Int.From(long.MaxValue);
 
     public override Obj ToList() => new Err("counter is infinite");
 
@@ -35,12 +34,9 @@ public class Counter : Iters
 
     public override Obj Spread() => new Err("counter is infinite");
 
-    public override Obj Clone() => new Counter(current)
-    {
-        Annotations = Annotations
-    };
+    public override Counter Clone() => new(current);
 
-    protected IEnumerable<Obj> Default(long start)
+    protected static IEnumerable<Obj> Default(long start)
     {
         long i = start;
         while (true)

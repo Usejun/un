@@ -17,6 +17,7 @@ public class Lexer(Source source)
     private readonly Source source = source;
     private readonly Stack<int> indents = new([0]);
     private bool lineStart = true;
+    private int groupDepth;
 
     private bool EOF => index >= source.Code.Length;
 
@@ -82,6 +83,24 @@ public class Lexer(Source source)
 
             if (Consume('\n'))
             {
+                if (groupDepth > 0)
+                {
+                    source.IgnoredNewLines.Add(index - 1);
+                    lineStart = false;
+                    continue;
+                }
+                int temp = index;
+
+                while (temp < source.Code.Length && (source.Code[temp] == ' ' || source.Code[temp] == '\t'))
+                    temp++;
+
+                if (temp < source.Code.Length && source.Code[temp] == '.')
+                {
+                    source.IgnoredNewLines.Add(index - 1);
+                    lineStart = false;
+                    continue;
+                }
+
                 tokens.Add(new Token(index - 1, 1, TokenType.NewLine));
                 lineStart = true;
                 continue;
@@ -131,7 +150,15 @@ public class Lexer(Source source)
         else
             return Error(start, "expected opening quote for string");
 
-        bool triple = Consume(quote) && Consume(quote);
+        bool triple = false;
+
+        if (Consume(quote))
+        {
+            if (Consume(quote))
+                triple = true;
+            else
+                return new Token(start, index - start, TokenType.String);
+        }
 
         while (index < source.Code.Length)
         {
@@ -401,14 +428,14 @@ public class Lexer(Source source)
 
         return Peek() switch
         {
-            '(' => Create(TokenType.LParen, 1),
-            ')' => Create(TokenType.RParen, 1),
+            '(' => Create(TokenType.LParen, 1, +1),
+            ')' => Create(TokenType.RParen, 1, -1),
 
-            '{' => Create(TokenType.LBrace, 1),
-            '}' => Create(TokenType.RBrace, 1),
+            '[' => Create(TokenType.LBrack, 1, +1),
+            ']' => Create(TokenType.RBrack, 1, -1),
 
-            '[' => Create(TokenType.LBrack, 1),
-            ']' => Create(TokenType.RBrack, 1),
+            '{' => Create(TokenType.LBrace, 1, +1),
+            '}' => Create(TokenType.RBrace, 1, -1),
 
             ',' => Create(TokenType.Comma, 1),
             ':' => Create(TokenType.Colon, 1),
@@ -416,8 +443,10 @@ public class Lexer(Source source)
             _ => GetComplexOperatorToken()
         };
 
-        Token Create(TokenType type, int length)
+        Token Create(TokenType type, int length, int depth = 0)
         {
+            groupDepth += depth;
+
             index += length;
             return new Token(start, length, type);
         }
@@ -508,7 +537,7 @@ public class Lexer(Source source)
     }
 
     private bool Peek(char c)
-    {
+   {
         if (EOF) return false;
         return source.Code[index] == c;
     }

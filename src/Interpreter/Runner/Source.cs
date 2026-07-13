@@ -1,9 +1,15 @@
+using System.Text;
+
 namespace Un;
 
-public sealed record Source(string Path, string Code)
+public class Source(string path, string code)
 {
-    public string Name => System.IO.Path.GetFileNameWithoutExtension(Path);
-    public string FullName => System.IO.Path.GetFileName(Path);
+    public string Path => path;
+    public string Code => code;
+    public string Name => System.IO.Path.GetFileNameWithoutExtension(path);
+    public string FullName => System.IO.Path.GetFileName(path);
+
+    public HashSet<int> IgnoredNewLines { get; } = [];
 
     public int GetLine(int position)
     {
@@ -33,17 +39,32 @@ public sealed record Source(string Path, string Code)
 
     public string GetLineText(int position)
     {
-        int start = position;
+        int start = GetLineStart(position);
 
-        while (start > 0 && Code[start - 1] != '\n')
-            start--;
+        var sb = new StringBuilder();
 
-        int end = position;
+        while (true)
+        {
+            int end = start;
 
-        while (end < Code.Length && Code[end] != '\n')
-            end++;
+            while (end < Code.Length && Code[end] != '\n')
+                end++;
 
-        return Code[start..end];
+            sb.Append(Code, start, end - start);
+
+            if (end >= Code.Length || !IgnoredNewLines.Contains(end))
+                break;
+
+            start = end + 1;
+
+            while (start < Code.Length &&
+                  (Code[start] == ' ' || Code[start] == '\t'))
+            {
+                start++;
+            }
+        }
+
+        return sb.ToString();
     }
 
     public int GetLineStart(int position)

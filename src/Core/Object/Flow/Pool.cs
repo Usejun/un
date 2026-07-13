@@ -1,16 +1,19 @@
-using Un.Object;
 using Un.Object.Primitive;
 using Un.Object.Collections;
 using System.Collections.Concurrent;
 using Un.Object.Function;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Flow;
 
+[NativeType(Name = "pool")]
 public class Pool : Obj
 {
     private readonly BlockingCollection<Future> queue = [];
     private readonly List<Thread> threads = [];
+
+    public Pool() : this(4) { }
 
     public Pool(long workers) : base(UnType.Create("pool"))
     {
@@ -24,8 +27,6 @@ public class Pool : Obj
             thread.Start();
             threads.Add(thread);
         }
-
-        Members = GetOriginal();
     }
 
     public override Obj Init(Tup args) => args switch
@@ -45,94 +46,68 @@ public class Pool : Obj
         return None;
     }
 
-    public override Obj Clone() => this;
+    public override Obj Copy() => this;
 
-    public override Attributes GetOriginal() => new()
+    public override Obj Clone() => new Err("'lock' cannot be cloned");
+
+    [Native(Name = "submit")]
+    public static Obj Submit(
+        [Self] Pool self,
+        [ArgInfo(Essential = true)] Obj fn,
+        [ArgInfo(Positional = true)] Obj args)
     {
-        { "submit", new NFn()
+        if (!fn.As<Fn>(out _))
+            return new Err("expected 'fn' argument to be of type 'func'");
+
+        if (!args.As<Tup>(out var argsTup))
+            return new Err("expected 'args' argument to be of type 'collection'");
+
+        var future = new Future(new Task<Obj>(() => fn.Call(argsTup)));
+        self.queue.Add(future);
+        return future;
+    }
+
+    [Native(Name = "map")]
+    public static Obj Map(
+        [Self] Pool self,
+        [ArgInfo(Essential = true)] Obj fn,
+        [ArgInfo(Positional = true)] Obj vargs)
+    {
+        if (!fn.As<Fn>(out _))
+            return new Err("expected 'fn' argument to be of type 'func'");
+
+        if (vargs.As<Tup>(out var vargsTup))
+            return new Err("expected 'iterable' argument to be of type 'iterable'");
+
+        var len = vargsTup.Count;
+        var result = new List<Obj>();
+        var countdown = new CountdownEvent(len);
+
+        foreach (var varg in vargsTup.Value)
+        {
+            self.queue.Add(new Future(new Task<Obj>(() =>
             {
-                Name = "submit",
-                ReturnType = UnType.Future,
-                Args = [
-                    new Arg("fn") {
-                        Type = UnType.Func,
-                        IsEssential = true,
-                    },
-                    new Arg("args") {
-                        Type = CollectionType.Create(UnType.Tuple, UnType.TGeneric),
-                        IsPositional = true,
-                    }
-                ],
-                Func = (args) =>
+                var res = fn.Call(varg is Tup t ? t : new([varg]));
+                lock (result)
                 {
-                    if (!args["fn"].As<Fn>(out var fn))
-                        return new Err("expected 'fn' argument to be of type 'func'");
-
-                    var future = new Future(new Task<Obj>(() => fn.Call(args["args"].As<Tup>())));
-                    queue.Add(future);
-                    return future;
+                    result.Add(res);
                 }
-            }
-        },
-        { "map", new NFn()
-            {
-                Name = "map",
-                Args = [
-                    new Arg("fn") {
-                        Type = UnType.Func,
-                        IsEssential = true,
-                    },
-                    new Arg("vargs") {
-                        Type = CollectionType.Create(UnType.Tuple, UnType.TGeneric),
-                        IsPositional = true,
-                    }
-                ],
-                Func = (args) =>
-                {
-                    if (!args["fn"].As<Fn>(out var fn))
-                        return new Err("expected 'fn' argument to be of type 'func'");
+                countdown.Signal();
+                return None;
+            })));
+        }
 
-                    if (!args["vargs"].As<Tup>(out var vargs))
-                        return new Err("expected 'iterable' argument to be of type 'iterable'");
+        countdown.Wait();
 
-                    var len = vargs.Count;
-                    var result = new List<Obj>();
-                    var countdown = new CountdownEvent(len);
+        return new List([.. result]);
+    }
 
-                    foreach (var varg in vargs.Value)
-                    {
-                        queue.Add(new Future(new Task<Obj>(() =>
-                        {
-                            var res = fn.Call(varg is Tup t ? t : new([varg]));
-                            lock (result)
-                            {
-                                result.Add(res);
-                            }
-                            countdown.Signal();
-                            return None;
-                        })));
-                    }
-
-                    countdown.Wait();
-
-                    return new List([.. result]);
-                }
-            }
-        },
-        { "close", new NFn()
-            {
-                Name = "close",
-                ReturnType = UnType.None,
-                Args = [],
-                Func = (args) =>
-                {
-                    queue.CompleteAdding();
-                    foreach (var thread in threads)
-                        thread.Join();
-                    return None;
-                }
-            }
-        },
-
-    };
+    [Native(Name = "close")]
+    public static Obj Close([Self] Pool self)
+    {
+        self.queue.CompleteAdding();
+        foreach (var thread in self.threads)
+            thread.Join();
+        return None;
+    }
 }

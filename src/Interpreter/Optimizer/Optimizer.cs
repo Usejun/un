@@ -183,8 +183,18 @@ public static class Optimizer
             (double x, double y) => EvalDouble(op, x, y),
             (long x, double y) => EvalDouble(op, x, y),
             (double x, long y) => EvalDouble(op, x, y),
+            (string x, string y) => EvalString(op, x, y),
 
             _ => throw new Panic($"unsupported optimize types: {a.GetType().Name}, {b.GetType().Name}")
+        };
+    }
+
+    private static string EvalString(TokenType op, string a, string b)
+    {
+        return op switch
+        {
+            TokenType.Plus => a + b,
+            _ => throw new Panic($"unsupported optimize operator: {op}")
         };
     }
 

@@ -52,12 +52,12 @@ public class LFn(List<Node> body, Context closure) : Fn(closure)
         return None;
     }
 
-    public override Obj Clone() => new LFn(body, Closure)
+    public override LFn Clone() => new(body, Closure)
     {
         Name = Name,
-        Args = [..Args],
+        Args = Args,
         ReturnType = ReturnType,
         Self = Self,
-        Super = Super?.Clone()!,
+        Super = Super,
     };
 }

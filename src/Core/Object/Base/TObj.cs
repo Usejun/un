@@ -13,7 +13,7 @@ public class TObj(BaseType type) : Ref<BaseType>(type, UnType.Type)
 
     public override Bool Eq(Obj other) => other switch
     {
-        TObj o => Bool.From(Value == o.Value),
+        TObj o => Bool.From(ReferenceEquals(Value, o.Value)),
         _ => Bool.False
     };
 

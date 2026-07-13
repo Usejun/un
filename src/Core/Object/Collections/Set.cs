@@ -1,9 +1,10 @@
-using Un.Object.Function;
 using Un.Object.Primitive;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Collections;
 
+[BuiltinType("set")]
 public class Set(HashSet<Obj> value) : Ref<HashSet<Obj>>(value, UnType.Set)
 {
     public Set() : this([]) { }
@@ -30,127 +31,56 @@ public class Set(HashSet<Obj> value) : Ref<HashSet<Obj>>(value, UnType.Set)
 
     public override Int Len() => Int.From(Value.Count);
 
-    public override Obj GetItem(Obj key) => Value.TryGetValue(key, out var value) ? value : new Err($"key {key.ToStr().As<Str>().Value} not found in set");
+    public override Obj GetItem(Obj key) => Value.TryGetValue(key, out var value) ? value : new Err($"key {Str.To(key).Value} not found in set");
 
-    public override Obj Copy() => this;
+    public override Set Copy() => this;
 
-    public override Obj Clone() => new Set([.. Value]);
+    public override Set Clone() => new([.. Value]);
 
-    public override Str ToStr() => Str.From($"{{{string.Join(", ", Value.Select(x => x.ToStr().As<Str>().Value))}}}");
+    public override Str ToStr() => Str.From($"{{{string.Join(", ", Value.Select(x => Str.To(x).Value))}}}");
 
     public override Spreads Spread() => new([.. Value]);
 
-    public override Attributes GetOriginal() => new()
+    [Native(Name = "add")]
+    public static Obj Add([Self] Set self, [ArgInfo(Essential = true)] Obj value) => Bool.From(self.Value.Add(value));
+
+    [Native(Name = "remove")]
+    public static Obj Remove([Self] Set self, [ArgInfo(Essential = true)] Obj value) => Bool.From(self.Value.Remove(value));
+
+    [Native(Name = "contains")]
+    public static Obj Contains([Self] Set self, [ArgInfo(Essential = true)] Obj value) => Bool.From(self.Value.Contains(value));
+
+    [Native(Name = "clear")]
+    public static Obj Clear([Self] Set self)
     {
-        { "add", new NFn
-            {
-                Name = "add",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    return Bool.From(self.Value.Add(args["value"]));
-                }
-            }
-        },
-        { "remove", new NFn
-            {
-                Name = "remove",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    return Bool.From(self.Value.Remove(args["value"]));
-                }
-            }
-        },
-        { "contains", new NFn
-            {
-                Name = "contains",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    return Bool.From(self.Value.Contains(args["value"]));
-                }
-            }
-        },
-        { "clear", new NFn
-            {
-                Name = "clear",
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    self.Value.Clear();
-                    return None;
-                }
-            }
-        },
-        { "clone", new NFn
-            {
-                Name = "clone",
-                ReturnType = UnType.Set,
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    return self.Clone();
-                }
-            }
-        },
-        { "union", new NFn
-            {
-                Name = "union",
-                ReturnType = UnType.Set,
-                Args = [new Arg("other") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["other"].As<Set>(out var other))
-                        return new Err("invalid argument: other");
-                    return self.Add(other);
-                }
-            }
-        },
-        { "intersect", new NFn
-            {
-                Name = "intersect",
-                ReturnType = UnType.Set,
-                Args = [new Arg("other") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["other"].As<Set>(out var other))
-                        return new Err("invalid argument: other");
-                    return self.Sub(other);
-                }
-            }
-        },
-        { "difference", new NFn
-            {
-                Name = "difference",
-                ReturnType = UnType.Set,
-                Args = [new Arg("other") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Set>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["other"].As<Set>(out var other))
-                        return new Err("invalid argument: other");
-                    return self.BXor(other);
-                }
-            }
-        }
-    };
+        self.Value.Clear();
+        return None;
+    }
+
+    [Native(Name = "clone")]
+    public static Obj Clone([Self] Set self) => self.Clone();
+
+    [Native(Name = "union")]
+    public static Obj Union([Self] Set self, [ArgInfo(Essential = true)] Obj other)
+    {
+        if (!other.As<Set>(out var otherValue))
+            return new Err("invalid argument: other");
+        return new Set([.. self.Value.Union(otherValue.Value)]);
+    }
+
+    [Native(Name = "intersect")]
+    public static Obj Intersect([Self] Set self, [ArgInfo(Essential = true)] Obj other)
+    {
+        if (!other.As<Set>(out var otherValue))
+            return new Err("invalid argument: other");
+        return new Set([.. self.Value.Intersect(otherValue.Value)]);
+    }
+
+    [Native(Name = "difference")]
+    public static Obj Difference([Self] Set self, [ArgInfo(Essential = true)] Obj other)
+    {
+        if (!other.As<Set>(out var otherValue))
+            return new Err("invalid argument: other");
+        return new Set([.. self.Value.Except(otherValue.Value)]);
+    }
 }

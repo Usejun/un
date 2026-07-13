@@ -1,8 +1,10 @@
 using Un.Object.Collections;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
+[BuiltinType("float")]
 public class Float(double value) : Val<double>(value, UnType.Float)
 {
     public Float() : this(0) { }
@@ -64,9 +66,9 @@ public class Float(double value) : Val<double>(value, UnType.Float)
         _ => new Err($"unsupported operand type(s) for **: 'float' and '{other.Type}'")
     };
 
-    public override Obj Neg() => new Float(-Value);
+    public override Float Neg() => new Float(-Value);
 
-    public override Obj Pos() => new Float(+Value);
+    public override Float Pos() => new Float(+Value);
 
     public override Obj Eq(Obj other) => other switch
     {
@@ -113,17 +115,14 @@ public class Float(double value) : Val<double>(value, UnType.Float)
     };
 
     public override Int ToInt() => Int.From((long)Value);
+
     public override Float ToFloat() => new(Value);
+
     public override Str ToStr() => Str.From(Value.ToString());
+
     public override Bool ToBool() => Bool.From(Value != 0);
 
-    public override Obj Copy() => new Float(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Float Copy() => new(Value);
     
-    public override Obj Clone() => new Float(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Float Clone() => new(Value);
 }

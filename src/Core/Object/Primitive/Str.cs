@@ -1,13 +1,14 @@
-using Un.Object.Function;
 using Un.Object.Collections;
 using Un.Object.Iter;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
+[BuiltinType("str")]
 public class Str : Ref<string>
 {   
-    public static Str Empty = new();
+    public static readonly Str Empty = new();
     private static Dictionary<string, Str> pool = [];
 
     public Str() : this("") { }
@@ -16,16 +17,39 @@ public class Str : Ref<string>
 
     public override Obj Init(Tup args) => args switch
     {
-        { Count: 0 } => new Str(""),
+        { Count: 0 } => From(""),
         { Count: 1 } => args[0].ToStr(),
+        { Count: 2 } and [Str str, Int i] => From(string.Concat(Enumerable.Repeat(str.Value, (int)Math.Min(i.Value, int.MaxValue)))),
         _ => new Err($"too many arguments"),
     };
 
     public char this[int index] => Value[index];
 
-    public override Obj Add(Obj other) => new Str(Value + other.ToStr().As<Str>().Value);
+    public override Obj Add(Obj other)
+    {
+        var str = other.ToStr();
 
-    public override Obj Sub(Obj other) => new Str(Value.Replace(other.ToStr().As<Str>().Value, ""));
+        if (str is Err err)
+            return err;
+
+        if (!str.As<Str>(out var strValue))
+            return new Err($"cannot add '{other.Type}' to '{Type}'");
+
+        return From(Value + strValue.Value);
+    }
+
+    public override Obj Sub(Obj other)
+    {
+        var str = other.ToStr();
+
+        if (str is Err err)
+            return err;
+
+        if (!str.As<Str>(out var strValue))
+            return new Err($"cannot add '{other.Type}' to '{Type}'");
+
+        return From(Value.Replace(strValue.Value, ""));
+    }
 
     public override Obj Eq(Obj other) => other switch
     {
@@ -62,13 +86,13 @@ public class Str : Ref<string>
 
     public override Str ToStr() => this;
 
-    public override Obj ToBool() => bool.TryParse(Value, out var result) ? result ? Bool.True : Bool.False : string.IsNullOrEmpty(Value) ? Bool.False : Bool.True;
+    public override Bool ToBool() => bool.TryParse(Value, out var result) ? result ? Bool.True : Bool.False : string.IsNullOrEmpty(Value) ? Bool.False : Bool.True;
 
     public override List ToList()
     {
         var list = new List();
         foreach (var c in Value)
-            list.Add(new Str($"{c}"));
+            list.Add(From($"{c}"));
         return list;
     }
 
@@ -81,15 +105,9 @@ public class Str : Ref<string>
         return false;
     }
 
-    public override Obj Copy() => new Str(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Str Copy() => new(Value);
 
-    public override Obj Clone() => new Str(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Str Clone() => new(Value);
 
     public override int GetHashCode() => Value.GetHashCode();
 
@@ -117,314 +135,196 @@ public class Str : Ref<string>
     {
         if (value == null) return Empty;
 
-        if (!intern) return new Str(value);
+        if (!intern) return From(value);
 
         if (pool.TryGetValue(value, out var cached))
             return cached;
 
-        var result = new Str(value);
+        var result = From(value);
         pool[value] = result;
 
         return result;
     }
 
-    public override Attributes GetOriginal() => new()
+    public static Str To(Obj obj)
     {
-        { "is_empty", new NFn
-            {
-                Name = "is_empty",
-                ReturnType = UnType.Bool,
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
+        if (obj.As<Str>(out var str)) return str;
+        if (obj.ToStr().As<Str>(out str)) return str;
+        return obj.Repr();
+    }
 
-                    return Bool.From(string.IsNullOrEmpty(self.Value));
-                }
-            }
-        },
-        { "index_of", new NFn
-            {
-                Name = "index_of",
-                ReturnType = UnType.Int,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["value"].As<Str>(out var value))
-                        return new Err("invalid argument: value");
+    [Native(Name = "is_empty")]
+    public static Obj IsEmpty([Self] Str self) => Bool.From(string.IsNullOrEmpty(self.Value));
 
-                    return Int.From(self.Value.IndexOf(value.Value));
-                }
-            }
-        },
-        { "contains", new NFn
-            {
-                Name = "contains",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                       return new Err("invalid argument: self");
-                    if (!args["value"].As<Str>(out var value))
-                       return new Err("invalid argument: value");
+    [Native(Name = "is_number")]
+    public static Obj IsNumber([Self] Str self) => Bool.From(self.Value.All(char.IsDigit));
 
-                    return Bool.From(self.Value.Contains(value.Value));
-                }
-            }
-        },
-        { "starts_with", new NFn
-            {
-                Name = "starts_with",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["value"].As<Str>(out var value))
-                        return new Err("invalid argument: value");
+    [Native(Name = "is_alphabet")]
+    public static Obj IsAlphabet([Self] Str self) => Bool.From(self.Value.All(char.IsLetter));
 
-                    return Bool.From(self.Value.StartsWith(value.Value));
-                }
-            }
-        },
-        { "ends_with", new NFn
-            {
-                Name = "ends_with",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return  new Err("invalid argument: self");
-                    if (!args["value"].As<Str>(out var value))
-                        return new Err("invalid argument: value");
+    [Native(Name = "index_of")]
+    public static Obj IndexOf([Self] Str self, [ArgInfo(Essential = true)] Obj value)
+    {
+        if (value.As<Str>(out var str))
+            return new Err("invalid argument: value");
 
-                    return Bool.From(self.Value.EndsWith(value.Value));
-                }
-            }
-        },
-        { "to_upper", new NFn
-            {
-                Name = "to_upper",
-                ReturnType = UnType.Str,
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
+        return Int.From(self.Value.IndexOf(str.Value));
+    }
 
-                    return new Str(self.Value.ToUpper());
-                }
-            }
-        },
-        { "to_lower", new NFn
-            {
-                Name = "to_lower",
-                ReturnType = UnType.Str,
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
+    [Native(Name = "contains")]
+    public static Obj Contains([Self] Str self, [ArgInfo(Essential = true)] Obj value)
+    {
+        if (value.As<Str>(out var str))
+            return new Err("invalid argument: value");
 
-                    return new Str(self.Value.ToLower());
-                }
-            }
-        },
-        { "split", new NFn
-            {
-                Name = "split",
-                ReturnType = UnType.List,
-                Args = [new Arg("sep") { IsOptional = true, DefaultValue = new Str(" ")}],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["sep"].As<Str>(out var sep))
-                        return new Err("invalid argument: sep");
+        return Bool.From(self.Value.Contains(str.Value));
+    }
 
-                    var parts = self.Value.Split(sep.Value);
-                    return new List([..parts.Select(p => new Str(p))]);
-                }
-            }
-        },
-        { "trim", new NFn
-            {
-                Name = "trim",
-                ReturnType = UnType.Str,
-                Args = [ new Arg("chars") { IsOptional = true, DefaultValue = new Str("") }],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["chars"].As<Str>(out var chars))
-                        return new Err("invalid argument: chars");
+    [Native(Name = "starts_with")]
+    public static Obj StartsWith([Self] Str self, [ArgInfo(Essential = true)] Obj value)
+    {
+        if (value.As<Str>(out var str))
+            return new Err("invalid argument: value");
 
-                    return new Str(self.Value.Trim(chars.Value.ToCharArray()));
-                }
-            }
-        },
-        { "join", new NFn
-            {
-                Name = "join",
-                ReturnType = UnType.Str,
-                Args = [new Arg("values") {IsEssential = true}],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
+        return Bool.From(self.Value.StartsWith(str.Value));
+    }
 
-                    var parts = args["values"].Iter().As<Iters>().Value.Select(v => v.ToStr().As<Str>().Value);
-                    return new Str(string.Join(self.Value, parts));
-                }
-            }
-        },
-        { "is_number", new NFn
-            {
-                Name = "is_number",
-                ReturnType = UnType.Bool,
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
+    [Native(Name = "ends_with")]
+    public static Obj EndsWith([Self] Str self, [ArgInfo(Essential = true)] Obj value)
+    {
+        if (value.As<Str>(out var str))
+            return new Err("invalid argument: value");
 
-                    bool result = self.Value.All(char.IsDigit);
-                    return Bool.From(result);
-                }
-            }
-        },
-        { "is_alphabet", new NFn
-            {
-                Name = "is_alphabet",
-                ReturnType = UnType.Bool,
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
+        return Bool.From(self.Value.EndsWith(str.Value));
+    }
 
-                    bool result = self.Value.All(char.IsLetter);
-                    return Bool.From(result);
-                }
-            }
-        },
-        { "center", new NFn
-            {
-                Name = "center",
-                ReturnType = UnType.Str,
-                Args = [
-                    new Arg("width") { IsEssential = true },
-                    new Arg("fill") { IsOptional = true, DefaultValue = new Str(" ") }
-                ],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["width"].As<Int>(out var width))
-                        return new Err("invalid argument: width");
-                    if (!args["fill"].As<Str>(out var fill))
-                        return new Err("invalid argument: fill");
+    [Native(Name = "to_upper")]
+    public static Obj ToUpper([Self] Str self) => From(self.Value.ToUpper());
 
-                    var pad = Math.Max(0, width.Value - self.Value.Length);
-                    var left = pad / 2;
-                    var right = pad - left;
-                    var fillChar = fill.Value.Length > 0 ? fill.Value[0] : ' ';
-                    return new Str(new string(fillChar, (int)left) + self.Value + new string(fillChar, (int)right));
-                }
-            }
-        },
-        { "left", new NFn
-            {
-                Name = "left",
-                ReturnType = UnType.Str,
-                Args = [
-                    new Arg("width") { IsEssential = true },
-                    new Arg("fill") { IsOptional = true, DefaultValue = new Str(" ") }
-                ],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["width"].As<Int>(out var width))
-                        return new Err("invalid argument: width");
-                    if (!args["fill"].As<Str>(out var fill))
-                        return new Err("invalid argument: fill");
+    [Native(Name = "to_lower")]
+    public static Obj ToLower([Self] Str self) => From(self.Value.ToLower());
 
-                    var pad = Math.Max(0, width.Value - self.Value.Length);
-                    var fillChar = fill.Value.Length > 0 ? fill.Value[0] : ' ';
-                    return new Str(self.Value + new string(fillChar, (int)pad));
-                }
-            }
-        },
-        { "right", new NFn
-            {
-                Name = "right",
-                ReturnType = UnType.Str,
-                Args = [
-                    new Arg("width") { IsEssential = true },
-                    new Arg("fill") { IsOptional = true, DefaultValue = new Str(" ") }
-                ],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["width"].As<Int>(out var width))
-                        return new Err("invalid argument: width");
-                    if (!args["fill"].As<Str>(out var fill))
-                        return new Err("invalid argument: fill");
+    [Native(Name = "split")]
+    public static Obj Split([Self] Str self, [ArgInfo(Essential = true)] Obj sep)
+    {
+        if (sep.As<Str>(out var str))
+            return new Err("invalid argument: value");
 
-                    var pad = Math.Max(0, width.Value - self.Value.Length);
-                    var fillChar = fill.Value.Length > 0 ? fill.Value[0] : ' ';
-                    return new Str(new string(fillChar, (int)pad) + self.Value);
-                }
-            }
-        },
-        { "replace", new NFn
-            {
-                Name = "replace",
-                ReturnType = UnType.Str,
-                Args = [
-                    new Arg("old") { IsEssential = true },
-                    new Arg("new") { IsEssential = true }
-                ],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["old"].As<Str>(out var oldStr))
-                        return new Err("invalid argument: old");
-                    if (!args["new"].As<Str>(out var newStr))
-                        return new Err("invalid argument: new");
+        var parts = self.Value.Split(str.Value);
+        return new List([.. parts.Select(From)]);
+    }
 
-                    return new Str(self.Value.Replace(oldStr.Value, newStr.Value));
-                }
-            }
-        },
-        { "find", new NFn
-            {
-                Name = "find",
-                ReturnType = UnType.Int,
-                Args = [
-                    new Arg("substr") { IsEssential = true }
-                ],
-                Func = args =>
-                {
-                    if (!args["self"].As<Str>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["substr"].As<Str>(out var substr))
-                        return new Err("invalid argument: substr");
+    [Native(Name = "trim")]
+    public static Obj Trim([Self] Str self, [ArgInfo(Essential = true)] Obj chars)
+    {
+        if (chars.As<Str>(out var str))
+            return new Err("invalid argument: value");
 
-                    return Int.From(self.Value.IndexOf(substr.Value));
-                }
-            }
-        },
+        return From(self.Value.Trim(str.Value.ToCharArray()));
+    }
 
-    };
-    
+    [Native(Name = "join")]
+    public static Obj Join([Self] Str self, [ArgInfo(Essential = true)] Obj values)
+    {
+        if (values.Iter().As<Iters>(out var str))
+            return new Err("invalid argument: values");
+
+        var strs = new List<string>();
+
+        foreach (var item in str.Value)
+        {
+            var s = item.ToStr();
+            if (s is Err err)
+                return err;
+
+            if (!str.As<Str>(out var strValue))
+                return new Err($"cannot join '{item.Type}' with '{self.Type}'");
+
+            strs.Add(strValue.Value);
+        }
+
+        return From(string.Join(self.Value, strs));
+    }
+
+    [Native(Name = "center")]
+    public static Obj Center(
+        [Self] Str self, 
+        [ArgInfo(Essential = true)] Obj width,
+        [ArgInfo(Optional = true)] Obj fill = null!)
+    {
+        if (width.As<Int>(out var widthValue))
+            return new Err("invalid argument: width");
+
+        fill ??= From(" ");
+
+        if (fill.As<Str>(out var fillValue))
+            return new Err("invalid argument: fill");
+
+        var pad = Math.Max(0, widthValue.Value - self.Value.Length);
+        var left = pad / 2;
+        var right = pad - left;
+        var fillChar = fillValue.Value.Length > 0 ? fillValue.Value[0] : ' ';
+        return From(new string(fillChar, (int)left) + self.Value + new string(fillChar, (int)right));
+    }
+
+    [Native(Name = "left")]
+    public static Obj Left(
+        [Self] Str self,
+        [ArgInfo(Essential = true)] Obj width,
+        [ArgInfo(Optional = true)] Obj fill = null!)
+    {
+        if (width.As<Int>(out var widthValue))
+            return new Err("invalid argument: width");
+
+        fill ??= From(" ");
+
+        if (fill.As<Str>(out var fillValue))
+            return new Err("invalid argument: fill");
+
+        var pad = Math.Max(0, widthValue.Value - self.Value.Length);
+        var fillChar = fillValue.Value.Length > 0 ? fillValue.Value[0] : ' ';
+        return From(self.Value + new string(fillChar, (int)pad));
+    }
+
+    [Native(Name = "right")]
+    public static Obj Right(
+       [Self] Str self,
+       [ArgInfo(Essential = true)] Obj width,
+       [ArgInfo(Optional = true)] Obj fill = null!)
+    {
+        if (width.As<Int>(out var widthValue))
+            return new Err("invalid argument: width");
+
+        fill ??= From(" ");
+
+        if (fill.As<Str>(out var fillValue))
+            return new Err("invalid argument: fill");
+
+        var pad = Math.Max(0, widthValue.Value - self.Value.Length);
+        var fillChar = fillValue.Value.Length > 0 ? fillValue.Value[0] : ' ';
+        return From(new string(fillChar, (int)pad) + self.Value);
+    }
+
+    [Native(Name = "replace")]
+    public static Obj Replace(
+       [Self] Str self,
+       [ArgInfo(Essential = true)] Obj oldValue,
+       [ArgInfo(Optional = true)] Obj newValue)
+    {
+        if (oldValue.As<Str>(out var oldStr))
+            return new Err("invalid argument: old_value");
+        if (newValue.As<Str>(out var newStr))
+            return new Err("invalid argument: new_value");
+
+        return From(self.Value.Replace(oldStr.Value, newStr.Value));
+    }
+
+    [Native(Name = "find")]
+    public static Obj Find([Self] Str self, [ArgInfo(Essential = true)] Obj subStr)
+    {
+        if (subStr.As<Str>(out var subStrValue))
+            return new Err("invalid argument: sub_str");
+
+        return Int.From(self.Value.IndexOf(subStrValue.Value));
+    }
 }

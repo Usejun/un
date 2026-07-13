@@ -13,16 +13,9 @@ public class Json : Ref<Obj>
         _ => 1
     };
 
-    public Json() : base(None, UnType.Create("json"))
-    {
-        
-    }
+    public Json() : base(None, UnType.Create("json")) { }
 
-    public Json(Obj obj) : base(obj, UnType.Create("json"))
-    {
-        
-    }
-
+    public Json(Obj obj) : base(obj, UnType.Create("json")) { }
 
     public override Obj Init(Tup args)
     {
@@ -50,7 +43,9 @@ public class Json : Ref<Obj>
 
     public override Str ToStr() => Str.From(Stringfy(Value));
 
-    public override Obj Clone() => new Json(Value.Clone());
+    public override Obj Copy() => this;
+
+    public override Json Clone() => new(Value.Clone());
 
     public static string Stringfy(Obj obj, int depth = 0)
     {
@@ -73,7 +68,7 @@ public class Json : Ref<Obj>
             Float f => f.Value.ToString(),
             Bool b => b.Value ? "true" : "false",
             List list => "[" + string.Join(", ", list.Value.Select(v => Stringfy(v, depth + 1))) + "]",
-            _ => $"\"{obj.ToStr().As<Str>().Value}\""
+            _ => $"\"{Str.To(obj).Value}\""
         };
     }
 

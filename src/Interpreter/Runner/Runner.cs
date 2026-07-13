@@ -11,8 +11,8 @@ public sealed class Runner(Context context, Context? parentContext = null)
     {
         try
         {
-            var tokenizer = new Lexer(Context.Source);
-            var tokens = tokenizer.Tokenize();
+            var lexer = new Lexer(Context.Source);
+            var tokens = lexer.Tokenize();
 
             var parser = new Parser(tokens, Context);
             var ast = parser.Parse();

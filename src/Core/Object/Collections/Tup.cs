@@ -1,11 +1,12 @@
 using System.Collections;
-using Un.Object.Function;
-using Un.Object.Primitive;
 using Un.Object.Iter;
+using Un.Object.Primitive;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Collections;
 
+[BuiltinType("tuple")]
 public class Tup : Ref<Obj[]>, IEnumerable<Obj>
 {
     public struct Enumerator(Tup tup) : IEnumerator<Obj>
@@ -57,21 +58,27 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
                 Members[Name[i]] = values[i];
     }
 
-    public Tup(IEnumerable<KeyValuePair<string, Obj>> pairs) : base([..pairs.Select(x => x.Value)], UnType.Tuple)
-    {
-        Name = [.. pairs.Select(x => x.Key)];
-    }
+    public Tup(IEnumerable<KeyValuePair<string, Obj>> pairs) : this([.. pairs]) { }
+
+    private Tup(List<KeyValuePair<string, Obj>> pairs) : this([.. pairs.Select(x => x.Value)], [.. pairs.Select(x => x.Key)]) { }
 
     public Obj this[int index] => Value[index];
 
-    public override Bool Eq(Obj other)
+    public override Obj Eq(Obj other)
     {
         if (other is not Tup tup)
             return Bool.False;
 
         for (int i = 0; i < Count; i++)
-            if (Value[i].NEq(tup[i]).As<Bool>().Value)
+        {
+            var neq = Value[i].NEq(tup[i]);
+            if (neq.As<Bool>(out var isNotEqual) && isNotEqual.Value)
                 return Bool.False;
+            else if (neq.As<Err>(out _))
+                return neq;
+            else
+                return new Err($"equals operand is must be a boolean");
+        }
 
         return Bool.True;
     }
@@ -87,17 +94,23 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
     {
         foreach (var value in Value)
         {
-            if (value.Eq(obj).As<Bool>().Value)
+            var eq = value.Eq(obj);
+
+            if (eq.As<Bool>(out var isEqual) && isEqual.Value)
                 return Bool.True;
+            else if (eq.As<Err>(out _))
+                return eq;
+            else
+                return new Err($"equals operand is must be a boolean");
         }
         return Bool.False;
     }
 
-    public override Obj Len() => Int.From(Count);
+    public override Int Len() => Int.From(Count);
 
     public override Bool ToBool() => Bool.From(Count != 0);
 
-    public override Str ToStr() => Str.From($"({string.Join(", ", Value.Select(v => v.ToStr().As<Str>().Value))})");
+    public override Str ToStr() => Str.From($"({string.Join(", ", Value.Select(x => Str.To(x).Value))})");
 
     public override List ToList() => new([..Value]);
 
@@ -107,7 +120,7 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
 
     public override Spreads Spread() => new(Value);
 
-    public override Obj Copy()
+    public override Tup Copy()
     {
         var obj = new Obj[Count];
         var names = new string[Count];
@@ -118,10 +131,10 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
             names[i] = Name[i];
         }
 
-        return new Tup(obj, names);
+        return new(obj, names);
     }
 
-    public override Obj Clone()
+    public override Tup Clone()
     {
         var obj = new Obj[Count];
         var names = new string[Count];
@@ -132,7 +145,7 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
             names[i] = Name[i];
         }
 
-        return new Tup(obj, names);
+        return new(obj, names);
     }
 
     public override bool Equals(object? obj)
@@ -145,7 +158,7 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
 
         for (int i = 0; i < Count; i++)
         {
-            if (!Value[i].Eq(other.Value[i]).As<Bool>().Value)
+            if (!Value[i].Eq(other.Value[i]).As<Bool>(out var isEqual) || !isEqual.Value)
                 return false;
         }
 

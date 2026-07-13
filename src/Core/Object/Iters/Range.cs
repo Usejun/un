@@ -18,14 +18,14 @@ public class Range : Iters
         this.step = step;        
     }
 
-    public override Obj Len()
+    public override Int Len()
     {
         if ((step > 0 && start >= stop) || (step < 0 && start <= stop))
             return Int.From(0);
         return Int.From((stop - start + step - (step > 0 ? 1 : -1)) / step);
     }
 
-    public override Obj Iter() => this;
+    public override Range Iter() => this;
 
     public override List ToList()
     {
@@ -37,14 +37,11 @@ public class Range : Iters
 
     public override Tup ToTuple() => ToList().ToTuple();
 
-    public override Obj ToStr() => new Err("range to string not implemented");
+    public override Str ToStr() => Repr();
 
     public override Spreads Spread() => new(ToList().Value);
 
-    public override Obj Clone() => new Range(start, stop, step)
-    {
-        Annotations = Annotations
-    };
+    public override Range Clone() => new(start, stop, step);
 
     protected static IEnumerable<Obj> Default(long start, long stop, long step)
     {

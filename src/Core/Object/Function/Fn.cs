@@ -18,128 +18,83 @@ public class Fn(Context closure) : Obj(UnType.Func)
 
         args = UnpackArgs(args);
 
-        var unnamed = new List<Obj>();
-        var extraNamed = new Map();
+        var positional = new List<Obj>();
+        var keyword = new Map();
 
         for (int i = 0; i < args.Count; i++)
         {
             var name = args.Name[i];
-            var val = args.Value[i];
+            var value = args.Value[i];
 
             if (string.IsNullOrEmpty(name))
             {
-                unnamed.Add(val);
+                positional.Add(value);
             }
             else
             {
-                if (scope.ContainsKeyInTop(name))
-                    return new Err($"argument '{name}' provided multiple times.");
-                extraNamed[name] = val;
+                if (!keyword.TryAdd(name, value))
+                    return new Err($"multiple values for argument '{name}'");
             }
         }
 
-        int unnamedIndex = 0;
-        var argNames = new HashSet<string>();
-        Arg positionalArg = Arg.Null, keywordArg = Arg.Null;
-
-        bool positionalReached = false;
+        int posIndex = 0;
+        Arg starArg = Arg.Null;
+        Arg kwArg = Arg.Null;
+        bool keywordOnly = false;
 
         foreach (var arg in Args)
         {
-            argNames.Add(arg.Name);
-
             if (arg.IsPositional)
             {
-                positionalArg = arg;
-                positionalReached = true;
+                starArg = arg;
+                keywordOnly = true;
                 continue;
             }
 
             if (arg.IsKeyword)
             {
-                keywordArg = arg;
+                kwArg = arg;
                 continue;
             }
 
-            if (arg.IsEssential)
-            {
-                if (unnamedIndex < unnamed.Count)
-                {
-                    scope[arg.Name] = unnamed[unnamedIndex++];
-                }
-                else if (extraNamed.TryGetValue(arg.Name, out var val))
-                {
-                    scope[arg.Name] = val;
-                    extraNamed.Remove(arg.Name);
-                }
-                else
-                {
-                    return new Err($"missing required argument: '{arg.Name}'");
-                }
-            }
-            else if (arg.IsOptional && !positionalReached)
-            {
-                if (unnamedIndex < unnamed.Count)
-                {
-                    scope[arg.Name] = unnamed[unnamedIndex++];
-                }
-                else if (extraNamed.TryGetValue(arg.Name, out var val))
-                {
-                    scope[arg.Name] = val;
-                    extraNamed.Remove(arg.Name);
-                }
-                else
-                {
-                    scope[arg.Name] = arg.DefaultValue!;
-                }
-            }
-            else if (extraNamed.TryGetValue(arg.Name, out var val))
-            {
-                scope[arg.Name] = val;
-                extraNamed.Remove(arg.Name);
-            }
+            Obj? value = null;
+
+            if (!keywordOnly && posIndex < positional.Count)
+                value = positional[posIndex++];
+            else if (keyword.Remove(arg.Name, out var kwValue))
+                value = kwValue;
+            else if (!arg.IsEssential)
+                value = arg.DefaultValue!;
             else
-            {
-                scope[arg.Name] = arg.DefaultValue!;
-            }
+                return new Err($"missing required argument '{arg.Name}'");
+
+            scope[arg.Name] = value;
         }
 
-        if (unnamedIndex < unnamed.Count)
+        if (!starArg.IsNull())
         {
-            if (!positionalArg.IsNull())
-            {
-                var rest = unnamed.Skip(unnamedIndex);
-                scope[positionalArg.Name] = new Tup([.. rest], new string[rest.Count()]);
-            }
-            else
-            {
-                return new Err("function does not accept positional arguments.");
-            }
+            var rest = positional.Skip(posIndex).ToArray();
+            scope[starArg.Name] = new Tup(rest);
         }
+        else if (posIndex < positional.Count)
+            return new Err("too many positional arguments");
 
-        if (!positionalArg.IsNull() && !scope.ContainsKeyInTop(positionalArg.Name))
-            scope[positionalArg.Name] = new Tup([], []);
-
-        if (extraNamed.Count > 0)
+        if (!kwArg.IsNull())
         {
-            if (!keywordArg.IsNull())
-            {
-                var dict = new Dict();
-                foreach (var (k, v) in extraNamed)
-                    dict.Value.Add(Str.From(k), v);
-                scope[keywordArg.Name] = dict;
-            }
-            else
-            {
-                var unexpected = extraNamed.Keys.First();
-                return new Err($"unexpected keyword argument: '{unexpected}'");
-            }
+            var dict = new Dict();
+
+            foreach (var (k, v) in keyword)
+                dict.Value[Str.From(k)] = v;
+
+            scope[kwArg.Name] = dict;
         }
+        else if (keyword.Count > 0)
+            return new Err($"unexpected keyword argument '{keyword.Keys.First()}'");
 
         return None;
     }
 
-    public override Obj Repr() => Str.From($"fn({string.Join(", ", Args.Select(x => x.Type))}) -> {ReturnType}");
+    public override Str Repr() => Str.From($"fn({string.Join(", ", Args.Select(x => x.Type))}) -> {ReturnType}");
 
     public override int GetHashCode() => Name?.GetHashCode() ?? Type.GetHashCode();
 
@@ -234,6 +189,7 @@ public class Fn(Context closure) : Obj(UnType.Func)
                     {
                         positional = true;
                         name = GetName(node.Children[0]);
+                        defaultValue = new Tup(Array.Empty<Obj>());
                         break;
                     }
 
@@ -241,6 +197,7 @@ public class Fn(Context closure) : Obj(UnType.Func)
                     {
                         keyword = true;
                         name = GetName(node.Children[0]);
+                        defaultValue = new Dict();
                         break;
                     }
 

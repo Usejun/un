@@ -3,9 +3,11 @@ using Un.Object.Function;
 using Un.Object.Primitive;
 using Un.Object.Iter;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Collections;
 
+[BuiltinType("list")]
 public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj>
 {
     public struct Enumerator(List list) : IEnumerator<Obj>
@@ -54,7 +56,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
             return Bool.False;
 
         for (int i = 0; i < Count; i++)
-            if (Value[i].NEq(list[i]).As<Bool>().Value)
+            if (Value[i].NEq(list[i]).As<Bool>(out var neq) && neq.Value)
                 return Bool.False;
 
         return Bool.True;
@@ -62,7 +64,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
 
     public override Obj GetItem(Obj key) => key switch
     {
-        Int i => OutOfRange((int)i.Value) ? OutOfRange((int)(i.Value + Count)) ? new Err("list index out of range") : this[(int)(i.Value + Count)] : this[(int)i.Value],
+        Int i => OutOfRange(this, (int)i.Value) ? OutOfRange(this, (int)(i.Value + Count)) ? new Err("list index out of range") : this[(int)(i.Value + Count)] : this[(int)i.Value],
         _ => new Err("invalid index type")
     };
 
@@ -71,10 +73,10 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         if (key is not Int i)
             return new Err("invalid index type");
 
-        if (!OutOfRange((int)i.Value))
+        if (!OutOfRange(this, (int)i.Value))
             return this[(int)i.Value] = value;
             
-        if (!OutOfRange((int)(i.Value + Count)))
+        if (!OutOfRange(this, (int)(i.Value + Count)))
             return this[(int)(i.Value + Count)] = value;
 
         return new Err("list index out of range");
@@ -82,13 +84,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
 
     public override Obj In(Obj obj) => obj switch
     {
-        List list => Bool.From(Overlap(list)),
-        Tup tup => Bool.From(Overlap(tup.ToList())),
+        List list => Bool.From(Overlap(this, list)),
+        Tup tup => Bool.From(Overlap(this, tup.ToList())),
 
         _ => new Err($"cannot check if '{obj.Type}' is in '{Type}'"),
     };
 
-    public override Obj Len() => Int.From(Count);
+    public override Int Len() => Int.From(Count);
 
     public override Bool ToBool() => Bool.From(Count != 0);
 
@@ -104,9 +106,9 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
 
     public override Iters Iter() => new(this);
 
-    public override Obj Copy() => this;
+    public override List Copy() => this;
 
-    public override Obj Clone()
+    public override List Clone()
     {
         var newList = new List(new Obj[Count]);
         for (int i = 0; i < Count; i++)
@@ -114,139 +116,210 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return newList;
     }
 
-    public override Str ToStr() => Str.From($"[{string.Join(", ", Value[..Count].Select(v => v.ToStr().As<Str>().Value))}]");
+    public override Str ToStr() => Str.From($"[{string.Join(", ", Value[..Count].Select(Format))}]");
+
+    private string Format(Obj value) => value is Str s ? $"'{s.Value}'" : Str.To(value).Value;
 
     public override Spreads Spread() => new(Value[..Count]);
 
-    private bool OutOfRange(int index) => index < 0 || index >= Count;
+    private static bool OutOfRange(List self, int index) => index < 0 || index >= self.Count;
 
-    private bool Overlap(List list)
+    private static bool Overlap(List self, List list)
     {
         foreach (var item in list)
         {
-            if (!Value.Contains(item))
+            if (!self.Value.Contains(item))
                 return false;
         }
         return true;
     }
 
-    public void Append(Obj value)
+    [Native(Name = "add")]
+    public static void Append([Self] List self, [ArgInfo(Essential = true)] Obj value)
     {
-        if (IsFull) Resize();
-        this[Count] = value;
-        Count++;
+        if (self.IsFull) Resize(self);
+        self[self.Count] = value;
+        self.Count++;
     }
 
-    public void Extend(Obj value)
+    [Native(Name = "extend")]
+    public static void Extend([Self] List self, [ArgInfo(Essential = true)] Obj value)
     {
-        foreach (var v in value.Iter().As<Iters>().Value)
-            Append(v);
-    }
-
-    public List ExtendInsert(Obj obj, int index)
-    {
-        if (IsFull)
-            Resize();
-
-        foreach (var item in obj.Iter().As<Iters>().Value)
-            Insert(item, index);
-
-        return this;
-    }
-
-    public List Insert(Obj obj, int index)
-    {
-        if (Count == 0)
+        if (value.Iter().As<Iters>(out var iters))
         {
-            Append(obj);
-            return this;
+            foreach (var v in iters.Value)
+                Append(self, v);
+        }
+        else           
+        { 
+            Append(self, value); 
+        }
+    }
+
+    [Native(Name = "insert")]
+    public static Obj Insert(
+        [Self] List self,
+        [ArgInfo(Essential = true)] Obj obj,
+        [ArgInfo(Essential = true)] Obj index)
+    {
+        if (!index.As<Int>(out var indexValue))
+            return new Err("invalid arguments: index");
+
+        if (self.Count == 0)
+        {
+            Append(self, obj);
+            return self;
         }
 
-        if (IsFull)
-            Resize();
+        if (self.IsFull)
+            Resize(self);
 
-        for (int i = Count - 1; i >= index; i--)
-            this[i + 1] = this[i];
-        this[index] = obj.Copy();
-        Count++;
+        for (int i = self.Count - 1; i >= indexValue.Value; i--)
+            self[i + 1] = self[i];
+        self[(int)indexValue.Value] = obj.Copy();
+        self.Count++;
 
-        return this;
+        return self;
     }
 
-    public Bool Remove(Obj obj)
+    [Native(Name = "extend_insert")]
+    public static List ExtendInsert(
+        [Self] List self,
+        [ArgInfo(Essential = true)] Obj obj,
+        [ArgInfo(Essential = true)] Obj index)
     {
-        for (int i = 0; i < Count; i++)
-            if (this[i].Eq(obj).As<Bool>().Value)
-                return RemoveAt(Int.From(i));
+        if (self.IsFull)
+            Resize(self);
+
+        if (obj.Iter().As<Iters>(out var iters))
+        {
+            foreach (var item in iters.Value)
+                Insert(self, item, index);
+        }
+        else
+        {
+            Insert(self, obj, index);
+        }
+
+        return self;
+    }
+
+    [Native(Name = "remove")]
+    public static Bool Remove([Self] List self, [ArgInfo(Essential = true)] Obj obj)
+    {
+        for (int i = 0; i < self.Count; i++)
+        {
+            if (!self[i].Eq(obj).As<Bool>(out var eq))
+                continue;                
+
+            if (eq.Value)
+                return Bool.From(RemoveAt(self, Int.From(i)).As<Bool>(out var res) && res.Value);
+
+        }
         return Bool.False;
     }
 
-    public Bool RemoveAt(Int index)
+    [Native(Name = "remove_at")]
+    public static Obj RemoveAt([Self] List self, [ArgInfo(Essential = true)] Obj index)
     {
-        if (OutOfRange((int)index.Value))
+        if (!index.As<Int>(out var idx))
+            return new Err("invalid arguments: index");
+        if (OutOfRange(self, (int)idx.Value))
             return Bool.False;
 
-        for (int i = (int)index.Value; i < Count - 1; i++)
-            this[i] = this[i + 1];
-        Count--;
+        for (int i = (int)idx.Value; i < self.Count - 1; i++)
+            self[i] = self[i + 1];
+        self.Count--;
         return Bool.True;
     }
 
-    public Int IndexOf(Obj obj)
+    [Native(Name = "index_of")]
+    public static Int IndexOf([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
-        for (int i = 0; i < Count; i++)
-            if (this[i].Eq(obj).As<Bool>().Value)
+        for (int i = 0; i < self.Count; i++)
+        {
+            if (!self[i].Eq(obj).As<Bool>(out var eq))
+                continue;
+
+            if (eq.Value)
                 return Int.From(i);
+        }
         return Int.From(-1);
     }
 
-    public Bool Contains(Obj obj) => Bool.From(IndexOf(obj).Value != -1);
+    [Native(Name = "contains")]
+    public static Bool Contains([Self] List self, [ArgInfo(Essential = true)] Obj obj) 
+        => Bool.From(IndexOf(self, obj).Value != -1);
 
-    public void Order(Fn fn)
+    [Native(Name = "order")]
+    public static Obj Order([Self] List self, [ArgInfo(Essential = true)] Obj fn)
     {
-        Array.Sort(Value, 0, Count, Comparer<Obj>.Create((i, j) => fn.Call(new([i], [])).CompareTo(fn.Call(new([j], [])))));
+        if (fn is not Fn)
+            return new Err("invalid arguments: fn");
+
+        Array.Sort(self.Value, 0, self.Count, Comparer<Obj>.Create((i, j) => fn.Call(new([i], [])).CompareTo(fn.Call(new([j], [])))));
+        return None;
     }
 
-    public void Sort()
+    [Native(Name = "sort")]
+    public static Obj Sort([Self] List self)
     {
-        Array.Sort(Value, 0, Count);
+        Array.Sort(self.Value, 0, self.Count);
+        return None;
     }
 
-    public void Reverse()
+    [Native(Name = "reverse")]
+    public static Obj Reverse([Self] List self)
     {
-        Array.Reverse(Value, 0, Count);
+        Array.Reverse(self.Value, 0, self.Count);
+        return None;
     }
 
-    public Int BinarySearch(Obj obj) => Int.From(Array.BinarySearch(Value, 0, Count, obj));
+    [Native(Name = "binary_search")]
+    public static Int BinarySearch([Self] List self, [ArgInfo(Essential = true)] Obj obj) 
+        => Int.From(Array.BinarySearch(self.Value, 0, self.Count, obj));
 
-    public Int LowerBound(Obj obj)
+    [Native(Name = "lower_bound")]
+    public static Obj LowerBound([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
-        int l = 0, r = Count - 1, m = 0;
+        int l = 0, r = self.Count - 1, m = 0;
         while (r > l)
         {
             m = (l + r) / 2;
-            if (this[m].Lt(obj).As<Bool>().Value) l = m + 1;
+            var lt = self[m].Lt(obj);
+
+            if (lt.As<Bool>(out var ltValue))
+                return lt is Err ? lt : new Err($"lower_bound requires '<' to return bool");
+
+            if (ltValue.Value) l = m + 1;
             else r = m;
         }
         return Int.From(r);
     }
 
-    public Int UpperBound(Obj obj)
+    [Native(Name = "upper_bound")]
+    public static Obj UpperBound([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
-        int l = 0, r = Count - 1, m = 0;
+        int l = 0, r = self.Count - 1;
         while (r > l)
         {
-            m = (l + r) / 2;
-            if (this[m].LtOrEq(obj).As<Bool>().Value) l = m + 1;
+            int m = (l + r) / 2;
+            var gt = self[m].Gt(obj);
+
+            if (gt.As<Bool>(out var gtValue))
+                return gt is Err ? gt : new Err($"upper_bound requires '>' to return bool");
+
+            if (gtValue.Value) l = m + 1;
             else r = m;
         }
         return Int.From(r);
     }
 
-    public void HPush(Obj obj)
+    [Native(Name = "hpush")]
+    public static Obj HPush([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
-        int child = Count;
-        Append(obj);
+        int child = self.Count;
+        Append(self, obj);
 
         while (child != 0)
         {
@@ -257,26 +330,29 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
 
             child = parent;
         }
+
+        return None;
     }
 
-    public Obj HPop()
+    [Native(Name = "hpop")]
+    public static Obj HPop([Self] List self)
     {
-        if (Count == 0)
+        if (self.Count == 0)
             return new Err("list is empty");
 
-        Obj value = this[0];
-        this[0] = this[^1];
-        Count--;
+        Obj value = self[0];
+        self[0] = self[^1];
+        self.Count--;
 
         int parent = 0;
 
-        while (Count / 2 > parent)
+        while (self.Count / 2 > parent)
         {
             int index = parent, left = 2 * parent + 1, right = 2 * parent + 2;
 
-            if (right < Count && index < right)
+            if (right < self.Count && index < right)
                 index = right;
-            if (left < Count && index < left)
+            if (left < self.Count && index < left)
                 index = left;
 
             (parent, index) = (index, parent);
@@ -289,13 +365,39 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return value;
     }
 
-    public Obj Pop(Int index)
+    [Native(Name = "pop")]
+    public static Obj Pop([Self] List self, [ArgInfo(Essential = true)] Obj index)
     {
-        Obj value = this[(int)index.Value];
-        RemoveAt(index);
+        if (!index.As<Int>(out var idx))
+            return new Err("invalid argumnets: index");
+
+        Obj value = self[(int)idx.Value];
+        RemoveAt(self, index);
         return value;
     }
 
+    [Native(Name = "map")]
+    public static Obj Map([Self] List self, [ArgInfo(Essential = true)] Obj type)
+    {
+
+        if (type.As<Fn>(out var fn))
+            return new List([.. self.Value.Select(x => fn.Call(Tup.One("", x)))]);
+        else if (type.As<TObj>(out var tObj))
+            return new List([.. self.Value.Select(x => Global.GetClass(tObj).Clone().Init(Tup.One("", x)))]);
+
+        return new Err("invalid argument: self");
+    }
+
+    [Native(Name = "resize")]
+    public static Obj Resize([Self] List self)
+    {
+        var newValue = new Obj[self.Value.Length * 2 + 1];
+        for (var i = 0; i < self.Value.Length; i++)
+            newValue[i] = self.Value[i];
+        self.Value = newValue;
+        return None;
+    }
+    
     public override int GetHashCode()
     {
         HashCode hash = new();
@@ -306,297 +408,8 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return hash.ToHashCode();
     }
 
-    public void Resize()
-    {
-        var newValue = new Obj[Value.Length * 2 + 1];
-        for (var i = 0; i < Value.Length; i++)
-            newValue[i] = Value[i];
-        Value = newValue;
-    }
-
     public IEnumerator<Obj> GetEnumerator() => new Enumerator(this);
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
-
-    public override Attributes GetOriginal() => new()
-    {
-        { "add", new NFn
-            {
-                Name = "add",
-                ReturnType = UnType.None,
-                Args = [new Arg("values") {
-                    Type = CollectionType.Create(UnType.Tuple, UnType.Any),
-                    IsPositional = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["values"].As<Tup>(out var values))
-                        return new Err("invalid argument: values");
-
-                    for (int i = 0; i < values.Count; i++)
-                        self.Append(values[i]);
-
-                    return None;
-                }
-            }
-        },
-        { "insert", new NFn
-            {
-                Name = "insert",
-                ReturnType = UnType.None,
-                Args =
-                [
-                    new Arg("value") {
-                        IsEssential = true
-                    },
-                    new Arg("index") {
-                        Type = UnType.Int,
-                        IsEssential = true
-                    }
-                ],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["index"].As<Int>(out var i))
-                        return new Err("invalid argument: index");
-
-                    self.Insert(args["value"], (int)i.Value);
-                    return None;
-                }
-            }
-        },
-        { "extend", new NFn
-            {
-                Name = "extend",
-                ReturnType = UnType.None,
-                Args = [new Arg("value") {
-                    IsEssential = true
-                }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    self.Extend(args["value"]);
-                    return None;
-                }
-            }
-        },
-        { "extend_insert", new NFn
-            {
-                Name = "extend_insert",
-                ReturnType = UnType.None,
-                Args =
-                [
-                    new Arg("value") {
-                        IsEssential = true
-                    },
-                    new Arg("index") {
-                        Type = UnType.Int,
-                        IsEssential = true
-                    }
-                ],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["index"].As<Int>(out var i))
-                        return new Err("invalid argument: index");
-
-                    self.ExtendInsert(args["value"], (int)i.Value);
-                    return None;
-                }
-            }
-        },
-        { "remove", new NFn
-            {
-                Name = "remove",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.Remove(args["value"]);
-                }
-            }
-        },
-        { "remove_at", new NFn
-            {
-                Name = "remove_at",
-                ReturnType = UnType.Bool,
-                Args = [new Arg("index") {
-                    Type = UnType.Int,
-                    IsEssential = true
-                }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["index"].As<Int>(out var i))
-                        return new Err("invalid argument: index");
-
-                    return self.RemoveAt(i);
-                }
-            }
-        },
-        { "index_of", new NFn
-            {
-                Name = "index_of",
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.IndexOf(args["value"]);
-                }
-            }
-        },
-        { "contains", new NFn
-            {
-                Name = "contains",
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.Contains(args["value"]);
-                }
-            }
-        },
-        { "clone", new NFn
-            {
-                Name = "clone",
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.Clone();
-                }
-            }
-        },
-        { "reverse", new NFn
-            {
-                Name = "reverse",
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    self.Reverse();
-                    return None;
-                }
-            }
-        },
-        { "sort", new NFn
-            {
-                Name = "sort",
-                Args = [new Arg("key") { IsOptional = true, DefaultValue = NFn.My }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["key"].As<Fn>(out var f))
-                        return new Err("invalid argument: key");
-
-                    self.Order(f);
-                    return None;
-                }
-            }
-        },
-        { "pop", new NFn
-            {
-                Name = "pop",
-                Args = [new Arg("index") { IsOptional = true, DefaultValue = Int.From(0) }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-                    if (!args["index"].As<Int>(out var index))
-                        return new Err("invalid argument: index");
-
-                    return self.Pop(index);
-                }
-            }
-        },
-        { "hpush", new NFn
-            {
-                Name = "hpush",
-                ReturnType = UnType.None,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    self.HPush(args["value"]);
-                    return None;
-                }
-            }
-        },
-        { "hpop", new NFn
-            {
-                Name = "hpop",
-                Args = [],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.HPop();
-                }
-            }
-        },
-        { "binary_search", new NFn
-            {
-                Name = "binary_search",
-                ReturnType = UnType.Int,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.BinarySearch(args["value"]);
-                }
-            }
-        },
-        { "lower_bound", new NFn
-            {
-                Name = "lower_bound",
-                ReturnType = UnType.Int,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.LowerBound(args["value"]);
-                }
-            }
-        },
-        { "upper_bound", new NFn
-            {
-                Name = "upper_bound",
-                ReturnType = UnType.Int,
-                Args = [new Arg("value") { IsEssential = true }],
-                Func = args =>
-                {
-                    if (!args["self"].As<List>(out var self))
-                        return new Err("invalid argument: self");
-
-                    return self.UpperBound(args["value"]);
-                }
-            }
-        },
-    };
 
 }

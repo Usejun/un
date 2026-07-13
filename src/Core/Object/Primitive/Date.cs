@@ -1,9 +1,10 @@
 using Un.Object.Collections;
-using Un.Object.Function;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
+[BuiltinType("date")]
 public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
 {
     public Date() : this(DateTime.Now) { }
@@ -34,66 +35,100 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
 
     public override Str ToStr() => Str.From(Value.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
-    public override Obj Copy() => new Date(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Date Copy() => new(Value);
 
-    public override Obj Clone() => new Date(Value)
-    {
-        Annotations = Annotations
-    };
+    public override Date Clone() => new(Value);
 
-    public override Attributes GetOriginal() => new()
-    {
-        { "year", new NFn()
-            {
-                Name = "year",
-                ReturnType = UnType.Int,
-                Func = _ => Int.From(Value.Year)
-            }
-        },
-        { "month", new NFn()
-            {
-                Name = "month",
-                ReturnType = UnType.Int,
-                Func = _ => Int.From(Value.Month)
-            }
-        },
-        { "day", new NFn()
-            {
-                Name = "day",
-                ReturnType = UnType.Int,
-                Func = _ => Int.From(Value.Day)
-            }
-        },
-        { "hour", new NFn()
-            {
-                Name = "hour",
-                ReturnType = UnType.Int,
-                Func = _ => Int.From(Value.Hour)
-            }
-        },
-        { "minute", new NFn()
-            {
-                Name = "minute",
-                ReturnType = UnType.Int,
-                Func = _ => Int.From(Value.Minute)
-            }
-        },
-        { "second", new NFn()
-            {
-                Name = "second",
-                ReturnType = UnType.Int,
-                Func = _ => Int.From(Value.Second)
-            }
-        },
-        { "ms", new NFn()
-            {
-                Name = "ms",
-                ReturnType = UnType.Int,
-                Func = _ => Int.From(Value.Millisecond)
-            }
-        },
-    };
+    [Native(Name = "year")]
+    public static Int Year([Self] Date self) => Int.From(self.Value.Year);
+
+    [Native(Name = "month")]
+    public static Int Month([Self] Date self) => Int.From(self.Value.Month);
+
+    [Native(Name = "day")]
+    public static Int Day([Self] Date self) => Int.From(self.Value.Day);
+
+    [Native(Name = "hour")]
+    public static Int Hour([Self] Date self) => Int.From(self.Value.Hour);
+
+    [Native(Name = "minute")]
+    public static Int Minute([Self] Date self) => Int.From(self.Value.Minute);
+
+    [Native(Name = "second")]
+    public static Int Second([Self] Date self) => Int.From(self.Value.Second);
+
+    [Native(Name = "ms")]
+    public static Int Ms([Self] Date self) => Int.From(self.Value.Millisecond);
+
+    [Native(Name = "timestamp")]
+    public static Int Timestamp([Self] Date self)
+        => Int.From(new DateTimeOffset(self.Value).ToUnixTimeSeconds());
+
+    [Native(Name = "timestamp_ms")]
+    public static Int TimestampMs([Self] Date self)
+        => Int.From(new DateTimeOffset(self.Value).ToUnixTimeMilliseconds());
+
+    [Native(Name = "format")]
+    public static Str Format([Self] Date self, [ArgInfo(Essential = true)] Str format)
+        => Str.From(self.Value.ToString(format.Value));
+
+    [Native(Name = "add_years")]
+    public static Date AddYears([Self] Date self, [ArgInfo(Essential = true)] Int years)
+        => new(self.Value.AddYears((int)years.Value));
+
+    [Native(Name = "add_months")]
+    public static Date AddMonths([Self] Date self, [ArgInfo(Essential = true)] Int months)
+        => new(self.Value.AddMonths((int)months.Value));
+
+    [Native(Name = "add_days")]
+    public static Date AddDays([Self] Date self, [ArgInfo(Essential = true)] Int days)
+        => new(self.Value.AddDays(days.Value));
+
+    [Native(Name = "add_hours")]
+    public static Date AddHours([Self] Date self, [ArgInfo(Essential = true)] Int hours)
+        => new(self.Value.AddHours(hours.Value));
+
+    [Native(Name = "add_minutes")]
+    public static Date AddMinutes([Self] Date self, [ArgInfo(Essential = true)] Int minutes)
+        => new(self.Value.AddMinutes(minutes.Value));
+
+    [Native(Name = "add_seconds")]
+    public static Date AddSeconds([Self] Date self, [ArgInfo(Essential = true)] Int seconds)
+        => new(self.Value.AddSeconds(seconds.Value));
+
+    [Native(Name = "add_ms")]
+    public static Date AddMilliseconds([Self] Date self, [ArgInfo(Essential = true)] Int milliseconds)
+        => new(self.Value.AddMilliseconds(milliseconds.Value));
+
+    [Native(Name = "weekday")]
+    public static Int Weekday([Self] Date self) => Int.From((int)self.Value.DayOfWeek);
+
+    [Native(Name = "day_of_year")]
+    public static Int DayOfYear([Self] Date self) => Int.From(self.Value.DayOfYear);
+
+    [Native(Name = "days_in_month")]
+    public static Int DaysInMonth([Self] Date self) => Int.From(DateTime.DaysInMonth(self.Value.Year, self.Value.Month));
+
+    [Native(Name = "is_leap_year")]
+    public static Bool IsLeapYear([Self] Date self) => Bool.From(DateTime.IsLeapYear(self.Value.Year));
+
+    [Native(Name = "date")]
+    public static Date DateOnly([Self] Date self) => new(self.Value.Date);
+
+    [Native(Name = "before")]
+    public static Bool Before([Self] Date self, [ArgInfo(Essential = true)] Date other) => Bool.From(self.Value < other.Value);
+
+    [Native(Name = "after")]
+    public static Bool After([Self] Date self, [ArgInfo(Essential = true)] Date other)
+        => Bool.From(self.Value > other.Value);
+
+    [Native(Name = "compare")]
+    public static Int Compare([Self] Date self, [ArgInfo(Essential = true)] Date other)
+        => Int.From(self.Value.CompareTo(other.Value));
+
+    [Native(Name = "to_utc")]
+    public static Date ToUtc([Self] Date self) => new(self.Value.ToUniversalTime());
+
+    [Native(Name = "to_local")]
+    public static Date ToLocal([Self] Date self) => new(self.Value.ToLocalTime());
 }

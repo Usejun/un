@@ -1,3 +1,4 @@
+using System.Runtime.Remoting;
 using Un.Object.Collections;
 using Un.Object.Primitive;
 using Un.Object.Type;
@@ -24,7 +25,7 @@ public class Obj(UnType type) : IComparable<Obj>
         if (TryMethod("__init__", out _, args))
             return this;
 
-        if (Super is not null && !Super.IsNone())
+        if (ValidSuper())
             return Super.Init(args);
 
         return this;
@@ -94,30 +95,78 @@ public class Obj(UnType type) : IComparable<Obj>
 
     public virtual Obj Xor(Obj other)
     {
-        if (ToBool().As<Bool>().Value ^ other.ToBool().As<Bool>().Value) return Bool.True;
+        if (!ToBool().As<Bool>(out var left))
+            return new Err("left operand must be a boolean");
+        if (!other.ToBool().As<Bool>(out var right))
+            return new Err("right operand must be a boolean");
+
+        if (left.Value ^ right.Value) return Bool.True;
         return Bool.False;
     }
 
-    public virtual Obj Not() => Bool.From(!ToBool().As<Bool>().Value);
+    public virtual Obj Not() => ToBool().As<Bool>(out var value) ? Bool.From(value.Value) : new Err("operand must be a boolean");
 
-    public virtual Obj Eq(Obj other) => IsNone() && other.IsNone() ? Bool.True
-        : Binary("__eq__", other, "other", s => s.Eq(other), () => new Err($"unsupported operand type(s) for ==: '{Type}' and '{other.Type}'"));
- 
-    public virtual Obj NEq(Obj other) => Bool.From(!Eq(other).As<Bool>().Value);
+    public virtual Obj Eq(Obj other)
+    {
+        if (TryMethod("__eq__", out var value, new([other], ["other"])))
+            return value;
+
+        if (ValidSuper())
+            return Super.Eq(other);
+
+        if (IsNone() && other.IsNone())
+            return Bool.True;
+
+        if (IsNone() || other.IsNone())
+            return Bool.False;
+
+        return new Err($"unsupported operand type(s) for ==: '{Type}' and '{other.Type}'");
+    }
+
+    public virtual Obj NEq(Obj other) => Binary("__neq__", other, "other", s => s.NEq(other), () => Eq(other).As<Bool>(out var value) ? Bool.From(!value.Value) : new Err("operands must be booleans"));
 
     public virtual Obj Lt(Obj other) => Binary("__lt__", other, "other", s => s.Lt(other), () => new Err($"unsupported operand type(s) for <: '{Type}' and '{other.Type}'"));
 
-    public virtual Obj Gt(Obj other) => Bool.From(!Lt(other).As<Bool>().Value && !Eq(other).As<Bool>().Value);
+    public virtual Obj Gt(Obj other) => Binary("__gt__", other, "other", s => s.Gt(other), () =>
+    {
+        if (!Lt(other).As<Bool>(out var ltValue))
+            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+        if (!Eq(other).As<Bool>(out var eqValue))
+            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
 
-    public virtual Obj LtOrEq(Obj other) => Bool.From(Lt(other).As<Bool>().Value || Eq(other).As<Bool>().Value);
+        return Bool.From(!ltValue.Value && !eqValue.Value);
+    });
 
-    public virtual Obj GtOrEq(Obj other) => Bool.From(!Lt(other).As<Bool>().Value);
+    public virtual Obj LtOrEq(Obj other) => Binary("__ltoreq__", other, "other", s => s.Gt(other), () =>
+    {
+        if (!Lt(other).As<Bool>(out var ltValue))
+            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+        if (!Eq(other).As<Bool>(out var eqValue))
+            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+
+        return Bool.From(ltValue.Value || eqValue.Value);
+    });
+
+    public virtual Obj GtOrEq(Obj other) => Binary("__gtoreq__", other, "other", s => s.Gt(other), () =>
+    {
+        if (!Lt(other).As<Bool>(out var ltValue))
+            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+        if (!Eq(other).As<Bool>(out var eqValue))
+            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+
+        return Bool.From(!ltValue.Value && eqValue.Value);
+    });
 
     public virtual Obj Slicer(Int to, Int from, Int step)
     {
         List list = [];
         long a = to.Value;
-        long b = from.Value == -1 ? Len().As<Int>().Value : from.Value;
+        long b = from.Value;
+
+        if (b == -1 && Len().As<Int>(out var len))        
+            b = len.Value;        
+        else 
+            return new Err($"unsupported operand type(s) for slice: '{Type}'");
 
         do
         {
@@ -132,7 +181,7 @@ public class Obj(UnType type) : IComparable<Obj>
     {
         if (TryMethod("__setattr__", out _, new([Str.From(name), value], ["key", "value"])))
             return value;
-        if (Super is not null && !Super.IsNone())
+        if (ValidSuper())
             Super.SetAttr(name, value);
 
         return Members[name] = value;
@@ -144,7 +193,7 @@ public class Obj(UnType type) : IComparable<Obj>
             goto Found;
         if (Members.TryGetValue(name, out value))
             goto Found;
-        if (Super is not null && !Super.IsNone() && Super.Has(name))
+        if (ValidSuper() && Super.Has(name))
         {
             value = Super.GetAttr(name);
             goto Found;
@@ -168,7 +217,7 @@ public class Obj(UnType type) : IComparable<Obj>
     {
         if (TryMethod("__setitem__", out _, new([key, value], ["key", "value"])))
             return value;
-        else if (Super is not null && !Super.IsNone())
+        else if (ValidSuper())
             return Super.SetItem(key, value);
         else
             return new Err($"unsupported operand type(s) for [] = 'value': '{Type}'");
@@ -184,34 +233,42 @@ public class Obj(UnType type) : IComparable<Obj>
         if (Types is UnType singleType && singleType == obj.Type)
             return Bool.True;
 
-        return Super is not null && !Super.IsNone() ? Super.Is(obj) : Bool.False;
+        return ValidSuper() ? Super.Is(obj) : Bool.False;
     }
 
     public virtual Obj In(Obj obj)
     {
         if (TryMethod("__in__", out Obj? value, new([obj], [])))
             return value;
-        return Super is not null && !Super.IsNone() ? Super.In(obj) : new Err($"unsupported operand type(s) for in: '{Type}'");
+        return ValidSuper() ? Super.In(obj) : new Err($"unsupported operand type(s) for in: '{Type}'");
     }
 
-    public virtual Obj Repr()
+    public virtual Str Repr()
     {
         if (TryMethod("__repr__", out Obj? value, []))
-            return value;
-        return Super is not null && !Super.IsNone() && Super.Repr().As<Str>().Value != Super.Type.Name ? Super.Repr(): Str.From(Type.Name);
+            return (Str)value;
+
+        if (ValidSuper() && Super.Repr().As<Str>(out var repr))
+        {
+           if (repr.Value == Super.Type.Name)
+                return Str.From(Type.Name);
+            return repr;
+        }
+
+        return Str.From(Type.Name);
     }
 
     public virtual Obj Clone()
     {
         if (TryMethod("__clone__", out Obj? value, []))
             return value;
-        return Super is not null && !Super.IsNone() && Super.Has("__clone__") ? Super.Clone() : new Obj(Type)
+        return ValidSuper() && Super.Has("__clone__") ? Super.Clone() : new Obj(Type)
         {
             Types = Types,
             Members = Members.New(),
             Annotations = Annotations,
             Self = Self,
-            Super = Super?.Clone()!,
+            Super = Super.Clone() ?? None,
         };
     }
 
@@ -227,55 +284,12 @@ public class Obj(UnType type) : IComparable<Obj>
         return false;
     }
 
-    public bool As<T, U>(out Obj value) where T : Obj where U : Obj
-    {
-        if (this is T obj1)
-        {
-            value = obj1;
-            return true;
-        }
-        if (this is U obj2)
-        {
-            value = obj2;
-            return true;
-        }
-
-        value = null!;
-        return false;
-    }
-
-    public T As<T>() where T : Obj
-    {
-        if (this is T obj)
-            return obj;
-
-        throw new Panic($"internal type mismatch: expected {typeof(T).Name}, got {Type}");
-    }
-
-    public Obj As<T, U>() where T : Obj where U : Obj
-    {
-        if (this is T obj1)
-            return obj1;
-        if (this is U obj2)
-            return obj2;
-
-       return new Err($"cannot cast {Type} to {typeof(T).Name.ToLower()} or {typeof(U).Name.ToLower()}");
-    }
-
-    public T As<T>(string message) where T : Obj
-    {
-        if (this is T obj)
-            return obj;
-
-        throw new Panic(message);
-    }
-
     protected Obj Unary(string method, Func<Obj, Obj> superCall, Func<Obj> fallback)
     {
         if (TryMethod(method, out var value, []))
             return value;
 
-        if (Super is not null && !Super.IsNone())
+        if (ValidSuper())
             return superCall(Super);
 
         return fallback();
@@ -286,7 +300,7 @@ public class Obj(UnType type) : IComparable<Obj>
         if (TryMethod(method, out var value, new([other], [argName])))
             return value;
 
-        if (Super is not null && !Super.IsNone())
+        if (ValidSuper())
             return superCall(Super);
 
         return fallback();
@@ -297,7 +311,7 @@ public class Obj(UnType type) : IComparable<Obj>
         if (TryMethod(method, out var value, args))
             return value;
 
-        if (Super is not null && !Super.IsNone())
+        if (ValidSuper())
             return superCall(Super);
 
         return fallback();
@@ -316,33 +330,39 @@ public class Obj(UnType type) : IComparable<Obj>
         return (value = null!) is not null;
     }
 
+    protected bool ValidSuper()
+    {
+        if (Super is null || Super.IsNone())
+            return false;
+        return true;
+    }
+
     public bool IsNone() => Type == UnType.None;
 
     public bool Has(string name)
     {
         if (Members.ContainsKey(name))
             return true;
-        if (Super is not null && !Super.IsNone())
+        if (ValidSuper())
             return Super.Has(name);
         return false;
     }
 
-    public virtual Attributes GetOriginal() => [];
-
     public override bool Equals(object? other) => other switch
     {
-        Obj o => Eq(o).As<Bool>().Value,
+        Obj o => Eq(o).As<Bool>(out var eqResult) && eqResult.Value,
         _ => false,
     };
 
-    public override int GetHashCode() => Hash().As<Int>().Value.GetHashCode();
-    
+    public override int GetHashCode() => Hash().As<Int>(out var hashResult) ? hashResult.Value.GetHashCode() : Type.GetHashCode();
+
     public int CompareTo(Obj? other)
     {
         if (other == null) return 0;
-        if (Eq(other).As<Bool>().Value) return 0;
-        if (Lt(other).As<Bool>().Value) return -1;
-        if (Gt(other).As<Bool>().Value) return 1;
+        if (Eq(other).As<Bool>(out var eqResult) && eqResult.Value) return 0;
+        if (Lt(other).As<Bool>(out var ltResult) && ltResult.Value) return -1;
+        if (Gt(other).As<Bool>(out var gtResult) && gtResult.Value) return 1;
+
         throw new Panic("types that are not comparable to each other.");
     }
 }
