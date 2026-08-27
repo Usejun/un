@@ -1,4 +1,0 @@
-use http
-
-skt = http.connect("https://www.naver.com")
-

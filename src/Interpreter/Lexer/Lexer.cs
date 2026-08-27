@@ -106,6 +106,14 @@ public class Lexer(Source source)
                 continue;
             }
 
+            if (Peek('#'))
+            {
+                while (!EOF && !Peek('\n'))
+                    index++;
+
+                continue;
+            }
+
             if (char.IsWhiteSpace(Peek()))
             {
                 index++;
