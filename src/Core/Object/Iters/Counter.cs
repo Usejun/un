@@ -1,14 +1,14 @@
-using Un.Object.Primitive;
 using Un.Object.Collections;
+using Un.Object.Primitive;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Iter;
 
+[NativeType(Name = "counter")]
 public class Counter : Iters
 {
     protected long current = 0;
-
-    public Counter() : this(0) { }
 
     public Counter(long start)
     {
@@ -19,7 +19,7 @@ public class Counter : Iters
 
     public override Obj Init(Tup args) => args switch
     {
-        { Count: 0 } => new Counter(),
+        { Count: 0 } => new Counter(0),
         { Count: 1 } and [Int i] => new Counter(i.Value),
         _ => new Err($"invaild '{Type}' initialize"),
     };

@@ -289,17 +289,7 @@ public sealed class Evaluator(Context context)
 
         context.PushFrame(new(GetText(node), context.Source, node.Start, node.Length));
 
-        if (callable is TObj t)
-            result = Global.GetClass(t).Clone().Init(args);
-        else
-        {
-            if (!callable.Clone().As<Fn>(out var fn))
-                return new Err($"unsupported operand type(s) for (): '{callable.Type}'");
-
-            result = fn.Call(args);
-        }
-
-        result = Unwrap(result, node);
+        result = Unwrap(callable.Call(args), node);
 
         context.PopFrame();
 

@@ -11,6 +11,4 @@ public struct Token(int start, int length, TokenType type) : ISpan
 
     readonly int ISpan.Start => Start;
     readonly int ISpan.Length => Length;
-
-    public readonly string ToString(string code) => $"Token: {code.Substring(Start, Length)}, Type: {Type}";
 }

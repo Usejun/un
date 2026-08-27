@@ -728,12 +728,12 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         {
             var rbrack = Expect(TokenType.RBrack, "expected ']' after index");
 
-            return new Node(expr.Start, GetLength(expr, rbrack), NodeKind.Index, children: [expr, start!]);
+            return new Node(lbrack.Start, GetLength(lbrack, rbrack), NodeKind.Index, children: [expr, start!]);
         }
 
         var rbrack2 = Expect(TokenType.RBrack, "expected ']' to close slice");
 
-        return new Node(expr.Start, GetLength(expr, rbrack2), NodeKind.Slice, children: [expr, start!, end!, step!]);
+        return new Node(lbrack.Start, GetLength(lbrack, rbrack2), NodeKind.Slice, children: [expr, start!, end!, step!]);
     }
 
     private Node ParsePrimary() => Current.Type switch
@@ -847,7 +847,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         var context = new Context(this.context.Scope, source, this.context.Frames);
         var lexer = new Lexer(source);
 
-        var tokens = lexer.Tokenize();
+        var tokens = lexer.Lex();
 
         var parser = new Parser(tokens, context);
 

@@ -22,16 +22,18 @@ public class Enu(UnType type, int n) : Obj(type)
     public override Obj Eq(Obj other) => other switch
     {
         Int i => Bool.From(N == i.Value),
-        Enu e => Type == other.Type ? Bool.From(N == e.N) : base.Eq(e),
+        Enu e => Bool.From(Type == other.Type && N == e.N),
         _ => new Err($"unsupported operand type(s) for ==: '{Type}' and '{other.Type}'")
     };
 
     public override Obj Lt(Obj other) => other switch
     {
         Int i => Bool.From(N < i.Value),
-        Enu e => Type == other.Type ? Bool.From(N < e.N) : base.Eq(e),
+        Enu e => Bool.From(Type == other.Type && N < e.N),
         _ => new Err($"unsupported operand type(s) for <: '{Type}' and '{other.Type}'")
     };
+
+    public override Obj Copy() => this;
 
     public override Enu Clone() => new(Type, N);
 

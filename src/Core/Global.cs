@@ -2,7 +2,6 @@ global using Attributes = System.Collections.Generic.Dictionary<string, Un.Objec
 global using Map = System.Collections.Generic.Dictionary<string, Un.Object.Obj>;
 
 using System.Reflection;
-using System.Reflection.Metadata;
 using Un.Object;
 using Un.Object.Function;
 using Un.Object.Primitive;
@@ -318,7 +317,7 @@ public static class Global
 
     public static void SetGlobalVariable(string name, Obj obj) => scope.Set(name, obj);
 
-    public static bool TryGetGlobalVariable(string name, out Obj obj) => scope.Get(name, out obj!);
+    public static bool TryGetGlobalVariable(string name, out Obj obj) => scope.Get(name, out obj);
 
     public static Scope GetGlobalScope() => scope;
 

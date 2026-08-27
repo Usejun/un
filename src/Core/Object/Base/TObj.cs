@@ -1,4 +1,5 @@
-﻿using Un.Object.Primitive;
+﻿using Un.Object.Collections;
+using Un.Object.Primitive;
 using Un.Object.Type;
 
 namespace Un.Object;
@@ -31,6 +32,8 @@ public class TObj(BaseType type) : Ref<BaseType>(type, UnType.Type)
         if (Value is UnionType union && union.Contains(type)) return Bool.True;
         return Bool.False;
     }
+
+    public override Obj Call(Tup args) => Global.GetClass(this).Clone().Init(args);
 
     public override Str ToStr() => Str.From($"<type: {Value}>");
 

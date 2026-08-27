@@ -1,23 +1,22 @@
-﻿using Un.Object;
-using Un.Object.Collections;
+﻿using Un.Object.Collections;
 using Un.Object.Primitive;
+using Un.Object.Type;
 using Un.Reflection;
 
-namespace Un.Native;
+namespace Un.Object.Util;
 
-[NativeModule("random", typeof(Object.Util.Random))]
-public static class Random
+public class Random : Ref<System.Random>
 {
-    private static System.Random shared = new();
+    public Random() : base(new(), UnType.Create("random")) { }
 
-    [Native(Name = "random")]
-    public static Object.Util.Random _Random() => new();
+    public Random(int seed) : base(new(seed), UnType.Create("random")) { }
 
     [Native(Name = "next")]
-    public static Int Next() => Object.Primitive.Int.From(shared.Next());
+    public static Int Next([Self] Random self) => Primitive.Int.From(self.Value.Next());
 
     [Native(Name = "int")]
     public static Obj Int(
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj min,
         [ArgInfo(Essential = true)] Obj max)
     {
@@ -28,16 +27,17 @@ public static class Random
         if (minValue.Value > maxValue.Value)
             return new Err("'min' cannot be greater than 'max'");
 
-        return Object.Primitive.Int.From(shared.Next((int)minValue.Value, (int)maxValue.Value + 1));
+        return Object.Primitive.Int.From(self.Value.Next((int)minValue.Value, (int)maxValue.Value + 1));
     }
 
     [Native(Name = "float")]
     public static Obj Float(
+        [Self] Random self,
         [ArgInfo(Optional = true)] Obj min = null!,
         [ArgInfo(Optional = true)] Obj max = null!)
     {
         if (min == null && max == null)
-            return new Float(shared.NextDouble());
+            return new Float(self.Value.NextDouble());
 
         if (min == null || max == null)
             return new Err("'min' and 'max' must be specified together");
@@ -49,15 +49,16 @@ public static class Random
         if (minValue.Value > maxValue.Value)
             return new Err("'min' cannot be greater than 'max'");
 
-        return new Float(shared.NextDouble() * (maxValue.Value - minValue.Value) + minValue.Value);
+        return new Float(self.Value.NextDouble() * (maxValue.Value - minValue.Value) + minValue.Value);
     }
 
     [Native(Name = "bool")]
-    public static Bool Bool() => Object.Primitive.Bool.From(shared.Next(2) == 0);
+    public static Bool Bool([Self] Random self) => Primitive.Bool.From(self.Value.Next(2) == 0);
 
     [Native(Name = "bytes")]
     public static Obj Bytes(
-    [ArgInfo(Essential = true)] Obj length)
+        [Self] Random self,
+        [ArgInfo(Essential = true)] Obj length)
     {
         if (!length.As<Int>(out var lengthValue))
             return new Err("expected 'random.bytes' argument 'length' is int");
@@ -65,31 +66,36 @@ public static class Random
             return new Err("'length' cannot be negative");
 
         var bytes = new byte[lengthValue.Value];
-        shared.NextBytes(bytes);
+        self.Value.NextBytes(bytes);
 
         return new List([.. bytes.Select(b => Object.Primitive.Int.From(b))]);
     }
 
     [Native(Name = "shuffle")]
-    public static Obj Shuffle([ArgInfo(Essential = true)]Obj obj)
+    public static Obj Shuffle(
+        [Self] Random self, 
+        [ArgInfo(Essential = true)] Obj obj)
     {
         if (!obj.As<List>(out var list))
             return new Err("expected 'random.shuffle' argument to be a list");
-        shared.Shuffle(list.Value.AsSpan(0, list.Count));
-        return Obj.None;
+        self.Value.Shuffle(list.Value.AsSpan(0, list.Count));
+        return None;
     }
 
     [Native(Name = "choice")]
-    public static Obj Choice([ArgInfo(Essential = true)] Obj obj)
+    public static Obj Choice(
+        [Self] Random self, 
+        [ArgInfo(Essential = true)] Obj obj)
     {
         if (obj.As<List>(out var list))
-            return list[shared.Next(0, list.Count)];
+            return list[self.Value.Next(0, list.Count)];
 
         return new Err("expected 'random.choice' argument to be a list");
     }
 
     [Native(Name = "choices")]
     public static Obj Choices(
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj obj,
         [ArgInfo(Essential = true)] Obj count)
     {
@@ -101,13 +107,14 @@ public static class Random
         var indexes = new List<int>();
 
         for (int i = 0; i < countValue.Value; i++)
-            indexes.Add(shared.Next(0, list.Count));
+            indexes.Add(self.Value.Next(0, list.Count));
 
         return new List([.. indexes.Select(i => list[i])]);
     }
 
     [Native(Name = "sample")]
     public static Obj Sample(
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj obj,
         [ArgInfo(Essential = true)] Obj count)
     {
@@ -118,38 +125,53 @@ public static class Random
         if (countValue.Value > list.Count)
             return new Err("'random.sample' argument 'count' cannot be greater than the length of 'obj'");
 
-        var clone = (List)list.Clone();
-        Shuffle(clone);
+        var clone = list.Clone();
+        Shuffle(self, clone);
 
         return new List([.. clone.Value.Take((int)countValue.Value)]);
     }
 
     [Native(Name = "chance")]
-    public static Obj Chance([ArgInfo(Essential = true)] Obj probability)
+    public static Obj Chance(
+        [Self] Random self, 
+        [ArgInfo(Essential = true)] Obj probability)
     {
         if (!probability.As<Float>(out var value))
             return new Err("expected 'random.chance' argument 'probability' is float");
         if (value.Value < 0 || value.Value > 1)
             return new Err("'probability' must be between 0 and 1");
 
-        return Object.Primitive.Bool.From(shared.NextDouble() < value.Value);
+        return Object.Primitive.Bool.From(self.Value.NextDouble() < value.Value);
     }
 
     [Native(Name = "seed")]
-    public static Obj Seed([ArgInfo(Essential = true)] Obj seed)
+    public static Obj Seed(
+        [Self] Random self, 
+        [ArgInfo(Essential = true)] Obj seed)
     {
         if (!seed.As<Int>(out var value))
             return new Err("expected 'random.seed' argument 'seed' is int");
 
-        shared = new System.Random((int)value.Value);
-        return Obj.None;
+        self.Value = new System.Random((int)value.Value);
+        return None;
     }
 
     [Native(Name = "uuid")]
-    public static Str UUID() => Str.From(Guid.NewGuid().ToString());
+    public static Obj UUID([Self] Random self)
+    {
+        byte[] bytes = new byte[16];
+        self.Value.NextBytes(bytes);
+
+        bytes[6] = (byte)((bytes[6] & 0x0F) | 0x40);
+        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
+
+        return Str.From(new Guid(bytes).ToString());
+    }
 
     [Native(Name = "string")]
-    public static Obj String([ArgInfo(Essential = true)] Obj length)
+    public static Obj String(
+        [Self] Random self, 
+        [ArgInfo(Essential = true)] Obj length)
     {
         const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -158,11 +180,12 @@ public static class Random
         if (value.Value < 0)
             return new Err("'length' cannot be negative");
 
-        return Str.From(new string([..Enumerable.Range(0, (int)value.Value).Select(_ => Chars[shared.Next(Chars.Length)])]));
+        return Str.From(new string([.. Enumerable.Range(0, (int)value.Value).Select(_ => Chars[self.Value.Next(Chars.Length)])]));
     }
 
     [Native(Name = "weighted")]
     public static Obj Weighted(
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj values,
         [ArgInfo(Essential = true)] Obj weights)
     {
@@ -193,7 +216,7 @@ public static class Random
         if (total == 0)
             return new Err("sum of weights must be greater than zero");
 
-        double r = shared.NextDouble() * total;
+        double r = self.Value.NextDouble() * total;
 
         for (int i = 0; i < nums.Length; i++)
         {
@@ -207,6 +230,7 @@ public static class Random
 
     [Native(Name = "range")]
     public static Obj Range(
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj start,
         [ArgInfo(Optional = true)] Obj end = null!)
     {
@@ -232,15 +256,17 @@ public static class Random
         if (min > max)
             return new Err("'start' cannot be greater than 'end'");
 
-        var list = new List([.. Enumerable.Range(min, max - min + 1).Select(x => Object.Primitive.Int.From(x))]);
+        var list = new List([.. Enumerable.Range(min, max - min + 1).Select(x => Primitive.Int.From(x))]);
 
-        Shuffle(list);
+        Shuffle(self, list);
 
         return list;
     }
 
     [Native(Name = "value")]
-    public static Obj Value([ArgInfo(Essential = true)] Obj obj)
+    public static Obj Values(
+        [Self] Random self, 
+        [ArgInfo(Essential = true)] Obj obj)
     {
         if (!obj.As<TObj>(out var t))
             return new Err("expected 'random.value' argument is enum");
@@ -248,10 +274,10 @@ public static class Random
         if (!Global.TryGetClass(t.Value, out var cla) || cla is not Enu e)
             return new Err("expected 'random.value' argument is enum");
 
-        var value = shared.Next(0, e.Members.Count);
+        var value = self.Value.Next(0, e.Members.Count);
         var enu = e.Clone();
 
-        enu.Init(Tup.One("", Object.Primitive.Int.From(value)));
+        enu.Init(Tup.One("", Primitive.Int.From(value)));
 
         return enu;
     }

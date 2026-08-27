@@ -1,9 +1,11 @@
-using Un.Object.Primitive;
 using Un.Object.Collections;
+using Un.Object.Primitive;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Iter;
 
+[NativeType(Name = "range")]
 public class Range : Iters
 {
     private long start;

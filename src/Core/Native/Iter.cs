@@ -6,9 +6,49 @@ using Un.Reflection;
 
 namespace Un.Native;
 
-[NativeModule("iter", typeof(Object.Iter.Range), typeof(Counter), typeof(Reverse))]
+[NativeModule("iter", typeof(Object.Iter.Range), typeof(Counter), typeof(Reverse), typeof(Repeat))]
 public static class Iter
 {
+    static bool NormalizeToTuple(Obj iterable, out Tup tuple, out Obj err)
+    {
+        if (!iterable.ToTuple().As<Tup>(out var raw))
+        {
+            tuple = null!;
+            err = new Err("expected 'iterable' argument to be a tuple");
+            return false;
+        }
+
+        Obj values = raw switch
+        {
+            { Count: 0 } => new Err("expected 'iterable' argument to have at least one value"),
+            { Count: 1 } when raw[0].As<List>(out var l) => l.ToTuple(),
+            { Count: 1 } when raw[0].As<Tup>(out var t) => t,
+            { Count: 1 } when raw[0].As<Object.Iter.Range>(out var r) => r.ToTuple(),
+            { Count: 1 } when raw[0].As<Iters>(out var it) && it.As<Tup>(out var itTuple) => itTuple,
+            { Count: 1 } when raw[0].As<Iters>(out _) => new Err("invalid argument type of 'iterable'"),
+            { Count: 1 } => raw[0],
+            _ => raw
+        };
+
+        if (values is Err e)
+        {
+            tuple = null!;
+            err = e;
+            return false;
+        }
+
+        if (!values.ToTuple().As<Tup>(out var result))
+        {
+            tuple = null!;
+            err = new Err("expected 'iterable' argument to be a tuple");
+            return false;
+        }
+
+        tuple = result;
+        err = Obj.None;
+        return true;
+    }
+
     [Native(Name = "iter")]
     public static Obj Array(
         [ArgInfo(Essential = true)] Obj value,
@@ -16,7 +56,7 @@ public static class Iter
     {
         size ??= new Tup([Int.From(1)]);
 
-        if (size.ToList().As<List>(out var sizeList))
+        if (!size.ToList().As<List>(out var sizeList))
             return new Err("expected 'size' argument to be a 'list'");
 
         var sizes = new List<int>();
@@ -28,6 +68,9 @@ public static class Iter
             sizes.Add((int)intItem.Value);
         }
 
+        if (sizes.Count == 0)
+            return new Err("expected 'size' argument to have at least one dimension");
+
         return Create([.. sizes]);
 
         List Create(int[] lengths)
@@ -35,7 +78,7 @@ public static class Iter
             List list = [];
 
             for (int i = 0; i < lengths[0]; i++)
-                List.Append(list, lengths.Length == 1 ? value.Clone() : Create([.. lengths[1..]]));
+                list.Append(lengths.Length == 1 ? value.Clone() : Create(lengths[1..]));
 
             return list;
         }
@@ -80,30 +123,44 @@ public static class Iter
     public static Obj Reverse([ArgInfo(Essential = true)] Obj obj)
     {
         if (!obj.Iter().As<Iters>(out var iter))
-            return new Err("expected 'array' argument to be of type 'list'");
+            return new Err("expected 'obj' argument to be of type 'iter'");
         return new Reverse(iter.Value);
     }
 
+    [Native(Name = "repeat")]
+    public static Obj Repeat(
+        [ArgInfo(Essential = true)] Obj obj,
+        [ArgInfo(Optional = true)] Obj count = null!)
+    {
+        if (!obj.Iter().As<Iters>(out var iter))
+            return new Err("expected 'obj' argument to be of type 'iter'");
+
+        count ??= Int.From(-1);
+
+        if (!count.As<Int>(out var countValue))
+            return new Err("expected 'count' argument to be of type 'int'");
+
+        return new Repeat(iter.Value, countValue.Value);
+    }
+
     [Native(Name = "zip")]
-    public static Obj Zip(
-        [ArgInfo(Positional = true)] Obj iterables)
+    public static Obj Zip([ArgInfo(Positional = true)] Obj iterables)
     {
         if (!iterables.As<Iters>(out var arrays))
-            return new Err("expected 'arrays' argument to be of type 'iter'");
+            return new Err("expected 'iterables' argument to be of type 'iter'");
 
         if (arrays.Len().ToInt().As<Int>(out var intLen) && intLen.Value == 0)
-            return new Err("expected 'arrays' argument to have a non-zero length");
+            return new Err("expected 'iterables' argument to have a non-zero length");
 
         int length = int.MaxValue;
 
         foreach (var i in arrays.Value)
         {
             if (!i.Len().As<Int>(out var arrayLength))
-                return new Err("expected all arrays to have a valid length");
+                return new Err("expected all 'iterables' items to have a valid length");
             if (arrayLength.Value < length)
                 length = (int)arrayLength.Value;
         }
-
 
         List list = [];
 
@@ -123,7 +180,7 @@ public static class Iter
     public static Obj Enumerate([ArgInfo(Essential = true)] Obj iterable)
     {
         if (!iterable.Iter().As<Iters>(out var iter))
-            return new Err("expected 'array' argument to be of type 'iter'");
+            return new Err("expected 'iterable' argument to be of type 'iter'");
 
         return new Iters(iter.Value.Select((x, i) => new Tup([Int.From(i), x], ["index", "value"])));
     }
@@ -131,34 +188,19 @@ public static class Iter
     [Native(Name = "sum")]
     public static Obj Sum([ArgInfo(Positional = true)] Obj iterable)
     {
-        if (!iterable.ToTuple().As<Tup>(out var tuple))
-            return new Err("expected 'value' argument to be a tuple");
+        if (!NormalizeToTuple(iterable, out var values, out var err))
+            return err;
 
-        Obj values = tuple switch
+        Obj total = values[0];
+
+        for (int i = 1; i < values.Count; i++)
         {
-            { Count: 0 } => new Err("expected more than one argument"),
-            { Count: 1 } when tuple[0].As<List>(out var l) => l.ToTuple(),
-            { Count: 1 } when tuple[0].As<Tup>(out var t) => t,
-            { Count: 1 } when tuple[0].As<Object.Iter.Range>(out var r) => r.ToTuple(),
-            { Count: 1 } when tuple[0].As<Iters>(out var it) && it.As<Tup>(out var itTuple) => itTuple,
-            { Count: 1 } when tuple[0].As<Iters>(out _) => new Err("invalid argument type of 'value'"),
-            { Count: 1 } => tuple[0],
-            _ => tuple
-        };
-
-        if (values is Err)
-            return values;
-        if (!values.ToTuple().As<Tup>(out var valuesTuple))
-            return new Err("expected 'value' argument to be a tuple");
-
-        Obj total = valuesTuple[0];
-
-        for (int i = 1; i < valuesTuple.Count; i++)
-        {
-            var sum = total.Add(valuesTuple[i]);
+            var sum = total.Add(values[i]);
 
             if (sum is Err)
                 return sum;
+
+            total = sum;
         }
 
         return total;
@@ -167,36 +209,20 @@ public static class Iter
     [Native(Name = "max")]
     public static Obj Max([ArgInfo(Positional = true)] Obj iterable)
     {
-        if (!iterable.ToTuple().As<Tup>(out var tuple))
-            return new Err("expected 'value' argument to be a tuple");
+        if (!NormalizeToTuple(iterable, out var values, out var err))
+            return err;
 
-        Obj values = tuple switch
+        Obj max = values[0];
+
+        for (int i = 1; i < values.Count; i++)
         {
-            { Count: 0 } => new Err("expected more than one argument"),
-            { Count: 1 } when tuple[0].As<List>(out var l) => l.ToTuple(),
-            { Count: 1 } when tuple[0].As<Tup>(out var t) => t,
-            { Count: 1 } when tuple[0].As<Object.Iter.Range>(out var r) => r.ToTuple(),
-            { Count: 1 } when tuple[0].As<Iters>(out var it) && it.As<Tup>(out var itTuple) => itTuple,
-            { Count: 1 } when tuple[0].As<Iters>(out _) => new Err("invalid argument type of 'value'"),
-            { Count: 1 } => tuple[0],
-            _ => tuple
-        };
-
-        if (values is Err)
-            return values;
-        if (!values.ToTuple().As<Tup>(out var valuesTuple))
-            return new Err("expected 'value' argument to be a tuple");
-
-        Obj max = valuesTuple[0];
-        for (int i = 1; i < valuesTuple.Count; i++)
-        {
-            var lt = max.Lt(valuesTuple[i]);
+            var lt = max.Lt(values[i]);
 
             if (!lt.As<Bool>(out var isLess))
-                return new Err($"{max} < {valuesTuple[i]} is not a boolean");
+                return new Err($"{max} < {values[i]} is not a boolean");
 
             if (isLess.Value)
-                max = valuesTuple[i];
+                max = values[i];
         }
 
         return max;
@@ -205,38 +231,287 @@ public static class Iter
     [Native(Name = "min")]
     public static Obj Min([ArgInfo(Positional = true)] Obj iterable)
     {
-        if (!iterable.ToTuple().As<Tup>(out var tuple))
-            return new Err("expected 'value' argument to be a tuple");
+        if (!NormalizeToTuple(iterable, out var values, out var err))
+            return err;
 
-        Obj values = tuple switch
+        Obj min = values[0];
+
+        for (int i = 1; i < values.Count; i++)
         {
-            { Count: 0 } => new Err("expected more than one argument"),
-            { Count: 1 } when tuple[0].As<List>(out var l) => l.ToTuple(),
-            { Count: 1 } when tuple[0].As<Tup>(out var t) => t,
-            { Count: 1 } when tuple[0].As<Object.Iter.Range>(out var r) => r.ToTuple(),
-            { Count: 1 } when tuple[0].As<Iters>(out var it) && it.As<Tup>(out var itTuple) => itTuple,
-            { Count: 1 } when tuple[0].As<Iters>(out _) => new Err("invalid argument type of 'value'"),
-            { Count: 1 } => tuple[0],
-            _ => tuple
-        };
-
-        if (values is Err)
-            return values;
-        if (!values.ToTuple().As<Tup>(out var valuesTuple))
-            return new Err("expected 'value' argument to be a tuple");
-
-        Obj min = valuesTuple[0];
-        for (int i = 1; i < valuesTuple.Count; i++)
-        {
-            var gt = min.Gt(valuesTuple[i]);
+            var gt = min.Gt(values[i]);
 
             if (!gt.As<Bool>(out var isGreater))
-                return new Err($"{min} > {valuesTuple[i]} is not a boolean");
+                return new Err($"{min} > {values[i]} is not a boolean");
 
             if (isGreater.Value)
-                min = valuesTuple[i];
+                min = values[i];
         }
 
         return min;
+    }
+
+    [Native(Name = "filter")]
+    public static Obj Filter(
+        [ArgInfo(Essential = true)] Obj predicate,
+        [ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        List list = [];
+
+        foreach (var item in iter.Value)
+        {
+            var result = predicate.Call(new Tup([item]));
+
+            if (result is Err)
+                return result;
+
+            if (!result.As<Bool>(out var isTrue))
+                return new Err("expected 'predicate' to return a boolean");
+
+            if (isTrue.Value)
+                List.Append(list, item);
+        }
+
+        return list;
+    }
+
+    [Native(Name = "map")]
+    public static Obj Map(
+        [ArgInfo(Essential = true)] Obj transform,
+        [ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        List list = [];
+
+        foreach (var item in iter.Value)
+        {
+            var result = transform.Call(new Tup([item]));
+
+            if (result is Err)
+                return result;
+
+            List.Append(list, result);
+        }
+
+        return list;
+    }
+
+    [Native(Name = "take")]
+    public static Obj Take(
+        [ArgInfo(Essential = true)] Obj count,
+        [ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!count.ToInt().As<Int>(out var n))
+            return new Err("expected 'count' argument to be an integer");
+
+        if (n.Value < 0)
+            return new Err("expected 'count' argument to be non-negative");
+
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        List list = [];
+        long i = 0;
+
+        foreach (var item in iter.Value)
+        {
+            if (i >= n.Value)
+                break;
+
+            List.Append(list, item);
+            i++;
+        }
+
+        return list;
+    }
+
+    [Native(Name = "skip")]
+    public static Obj Skip(
+        [ArgInfo(Essential = true)] Obj count,
+        [ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!count.ToInt().As<Int>(out var n))
+            return new Err("expected 'count' argument to be an integer");
+
+        if (n.Value < 0)
+            return new Err("expected 'count' argument to be non-negative");
+
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        List list = [];
+        long i = 0;
+
+        foreach (var item in iter.Value)
+        {
+            if (i >= n.Value)
+                List.Append(list, item);
+            i++;
+        }
+
+        return list;
+    }
+
+    [Native(Name = "chain")]
+    public static Obj Chain([ArgInfo(Positional = true)] Obj iterables)
+    {
+        if (!iterables.As<Iters>(out var arrays))
+            return new Err("expected 'iterables' argument to be of type 'iter'");
+
+        List list = [];
+
+        foreach (var array in arrays.Value)
+        {
+            if (!array.Iter().As<Iters>(out var iter))
+                return new Err("expected all 'iterables' items to be of type 'iter'");
+
+            foreach (var item in iter.Value)
+                List.Append(list, item);
+        }
+
+        return list;
+    }
+
+    [Native(Name = "flatten")]
+    public static Obj Flatten([ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        List list = [];
+
+        foreach (var item in iter.Value)
+        {
+            if (item.Iter().As<Iters>(out var inner))
+            {
+                foreach (var sub in inner.Value)
+                    List.Append(list, sub);
+            }
+            else
+            {
+                List.Append(list, item);
+            }
+        }
+
+        return list;
+    }
+
+    [Native(Name = "all")]
+    public static Obj All(
+        [ArgInfo(Essential = true)] Obj predicate,
+        [ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        foreach (var item in iter.Value)
+        {
+            var result = predicate.Call(new Tup([item]));
+
+            if (result is Err)
+                return result;
+
+            if (!result.As<Bool>(out var isTrue))
+                return new Err("expected 'predicate' to return a boolean");
+
+            if (!isTrue.Value)
+                return Bool.From(false);
+        }
+
+        return Bool.From(true);
+    }
+
+    [Native(Name = "any")]
+    public static Obj Any(
+        [ArgInfo(Essential = true)] Obj predicate,
+        [ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        foreach (var item in iter.Value)
+        {
+            var result = predicate.Call(new Tup([item]));
+
+            if (result is Err)
+                return result;
+
+            if (!result.As<Bool>(out var isTrue))
+                return new Err("expected 'predicate' to return a boolean");
+
+            if (isTrue.Value)
+                return Bool.From(true);
+        }
+
+        return Bool.From(false);
+    }
+
+    [Native(Name = "count")]
+    public static Obj Count(
+        [ArgInfo(Essential = true)] Obj predicate,
+        [ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        int total = 0;
+
+        foreach (var item in iter.Value)
+        {
+            var result = predicate.Call(new Tup([item]));
+
+            if (result is Err)
+                return result;
+
+            if (!result.As<Bool>(out var isTrue))
+                return new Err("expected 'predicate' to return a boolean");
+
+            if (isTrue.Value)
+                total++;
+        }
+
+        return Int.From(total);
+    }
+
+    [Native(Name = "sorted")]
+    public static Obj Sorted([ArgInfo(Essential = true)] Obj iterable)
+    {
+        if (!iterable.Iter().As<Iters>(out var iter))
+            return new Err("expected 'iterable' argument to be of type 'iter'");
+
+        var items = new List<Obj>(iter.Value);
+
+        for (int i = 1; i < items.Count; i++)
+        {
+            var key = items[i];
+            int j = i - 1;
+
+            while (j >= 0)
+            {
+                var gt = items[j].Gt(key);
+
+                if (!gt.As<Bool>(out var isGreater))
+                    return new Err($"{items[j]} > {key} is not a boolean");
+
+                if (!isGreater.Value)
+                    break;
+
+                items[j + 1] = items[j];
+                j--;
+            }
+
+            items[j + 1] = key;
+        }
+
+        List list = [];
+
+        foreach (var item in items)
+            List.Append(list, item);
+
+        return list;
     }
 }

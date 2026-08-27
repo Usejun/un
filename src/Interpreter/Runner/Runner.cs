@@ -12,7 +12,7 @@ public sealed class Runner(Context context, Context? parentContext = null)
         try
         {
             var lexer = new Lexer(Context.Source);
-            var tokens = lexer.Tokenize();
+            var tokens = lexer.Lex();
 
             var parser = new Parser(tokens, Context);
             var ast = parser.Parse();
@@ -77,7 +77,7 @@ public sealed class Runner(Context context, Context? parentContext = null)
         var code = File.ReadAllText(fullPath).Replace("\r\n", "\n").Replace('\r', '\n');
         var file = new Source(fullPath, code);
 
-        return new Runner(new Context(scope, file, []));
+        return new(new(scope, file, []));
     }
 
     public static Runner Load(Context context, Context parentContext) => new(context, parentContext);

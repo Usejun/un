@@ -379,13 +379,17 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
     [Native(Name = "map")]
     public static Obj Map([Self] List self, [ArgInfo(Essential = true)] Obj type)
     {
+        var list = new List();
+        
+        foreach (var item in self)
+        {
+            var res = type.Call(Tup.One("", item));
+            if (res is Err)
+                return res;
+            list.Add(res);
+        }
 
-        if (type.As<Fn>(out var fn))
-            return new List([.. self.Value.Select(x => fn.Call(Tup.One("", x)))]);
-        else if (type.As<TObj>(out var tObj))
-            return new List([.. self.Value.Select(x => Global.GetClass(tObj).Clone().Init(Tup.One("", x)))]);
-
-        return new Err("invalid argument: self");
+        return list;
     }
 
     [Native(Name = "resize")]

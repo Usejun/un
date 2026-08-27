@@ -21,14 +21,4 @@ public class Context(Scope scope, Source source, List<Frame> frames)
 
         Frames.RemoveAt(Frames.Count - 1);
     }
-
-    public Context Fork()
-    {
-        return new Context(Scope, Source, [.. Frames])
-        {
-            CallDepth = 0,
-            Defers = [],
-            Usings = []
-        };
-    }
 }

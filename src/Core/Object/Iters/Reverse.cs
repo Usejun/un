@@ -1,8 +1,10 @@
 using Un.Object.Collections;
 using Un.Object.Type;
+using Un.Reflection;
 
 namespace Un.Object.Iter;
 
+[NativeType(Name = "reverse")]
 public class Reverse : Iters
 {
     public Reverse() : base()

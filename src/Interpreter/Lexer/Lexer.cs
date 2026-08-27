@@ -21,7 +21,7 @@ public class Lexer(Source source)
 
     private bool EOF => index >= source.Code.Length;
 
-    public List<Token> Tokenize()
+    public List<Token> Lex()
     {
         List<Token> tokens = [];
 

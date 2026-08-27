@@ -4,13 +4,13 @@ namespace Un;
 
 public class Scope(Scope? parentScope = null)
 {
-    public static readonly Scope Empty = new Scope(null);
+    public static readonly Scope Empty = new(null);
 
     private readonly Scope? parentScope = parentScope;
 
-    private readonly Dictionary<string, int> symbols = new();
+    private readonly Dictionary<string, int> symbols = [];
 
-    private readonly List<Obj> slots = new();
+    private readonly List<Obj> slots = [];
 
     public Obj this[string key]
     {

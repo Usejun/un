@@ -44,7 +44,6 @@ public sealed class Desugarer
         var lhs = node.Children[0];
         var rhs = Visit(node.Children[1]);
 
-        // +=, -= ...
         if (node.Operator != default)
         {
             var op = node.Operator switch

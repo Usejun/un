@@ -18,22 +18,17 @@ public sealed class Node(int start, int length, NodeKind kind, TokenType op = de
         Value = Value
     };
 
-    public static Node Const(object value, int start, int length)
+    public static Node Const(object value, int start, int length) => value switch
     {
-        return value switch
-        {
-            int i => new Node(start, length, NodeKind.Integer) { Value = i },
-            long l => new Node(start, length, NodeKind.Integer) { Value = l },
-            double d => new Node(start, length, NodeKind.Float) { Value = d },
-            float f => new Node(start, length, NodeKind.Float) { Value = f },
-            string s => new Node(start, length, NodeKind.String) { Value = s },
-            bool b => new Node(start, length, NodeKind.Boolean) { Value = b },
+        int i => new Node(start, length, NodeKind.Integer) { Value = i },
+        long l => new Node(start, length, NodeKind.Integer) { Value = l },
+        double d => new Node(start, length, NodeKind.Float) { Value = d },
+        float f => new Node(start, length, NodeKind.Float) { Value = f },
+        string s => new Node(start, length, NodeKind.String) { Value = s },
+        bool b => new Node(start, length, NodeKind.Boolean) { Value = b },
 
-            null => new Node(start, length, NodeKind.None),
+        null => new Node(start, length, NodeKind.None),
 
-            _ => throw new Panic($"unsupported const type: {value.GetType()}")
-        };
-    }
-
-
+        _ => throw new Panic($"unsupported const type: {value.GetType()}")
+    };
 }
