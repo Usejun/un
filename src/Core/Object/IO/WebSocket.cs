@@ -25,7 +25,13 @@ public class WebSocket(ClientWebSocket value) : Ref<ClientWebSocket>(value, UnTy
 
     public override int GetHashCode() => Value.GetHashCode();
 
-    [Native(Name = "send")]
+    [Native(
+        Name = "send",
+        Description = "Sends data through socket.",
+        Example = "socket.send(text)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Send([Self] WebSocket self, [ArgInfo(Essential = true)] Obj text)
     {
         if (!text.As<Str>(out var str))
@@ -44,7 +50,12 @@ public class WebSocket(ClientWebSocket value) : Ref<ClientWebSocket>(value, UnTy
         }
     }
 
-    [Native(Name = "receive")]
+    [Native(
+        Name = "receive",
+        Description = "Receives data from socket.",
+        Example = "socket.receive()",
+        ReturnType = "string"
+    )]
     public static Obj Receive([Self] WebSocket self)
     {
         try
@@ -71,7 +82,12 @@ public class WebSocket(ClientWebSocket value) : Ref<ClientWebSocket>(value, UnTy
         }
     }
 
-    [Native(Name = "close")]
+    [Native(
+        Name = "close",
+        Description = "Closes socket.",
+        Example = "socket.close()",
+        ReturnType = "none"
+    )]
     public static Obj Close([Self] WebSocket self)
     {
         try
@@ -86,6 +102,11 @@ public class WebSocket(ClientWebSocket value) : Ref<ClientWebSocket>(value, UnTy
         }
     }
 
-    [Native(Name = "is_open")]
+    [Native(
+        Name = "is_open",
+        Description = "Checks whether a web_socket value open.",
+        Example = "socket.is_open()",
+        ReturnType = "boolean"
+    )]
     public static Bool IsOpen([Self] WebSocket self) => Bool.From(self.Value.State == WebSocketState.Open);
 }

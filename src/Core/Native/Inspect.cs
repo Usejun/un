@@ -8,10 +8,21 @@ namespace Un.Native;
 [NativeModule("inspect")]
 public static class Inspect
 {
-    [Native(Name = "attr")]
+    [Native(
+        Name = "attr",
+        Description = "Lists available attributes for a value.",
+        Example = "write(attr(value))",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static List Attr([ArgInfo(Essential = true)] Obj value) => new([.. value.Members.Keys.Select(Str.From)]);
-    
-    [Native(Name = "global")]
+
+    [Native(
+        Name = "global",
+        Description = "Returns the global namespace object.",
+        Example = "write(global())",
+        ReturnType = "dict"
+    )]
     public static Dict Global()
     {
         var dict = new Dict();
@@ -21,9 +32,15 @@ public static class Inspect
         return dict;
     }
 
-    [Native(Name = "getattr")]
+    [Native(
+        Name = "getattr",
+        Description = "Reads an attribute with an optional default.",
+        Example = "name = getattr(user, \"name\", \"guest\")",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "object", "string", "any" }
+    )]
     public static Obj GetAttr(
-        [ArgInfo(Essential = true)] Obj value, 
+        [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Essential = true)] Obj name,
         [ArgInfo(Optional = true)] Obj defaultValue = null!)
     {
@@ -34,7 +51,13 @@ public static class Inspect
         return attrValue;
     }
 
-    [Native(Name = "hasattr")]
+    [Native(
+        Name = "hasattr",
+        Description = "Checks whether an object has an attribute.",
+        Example = "write(hasattr(user, \"name\"))",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "object", "string" }
+    )]
     public static Obj HasAttr(
         [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Essential = true)] Obj name)
@@ -44,7 +67,13 @@ public static class Inspect
         return Bool.From(value.Members.ContainsKey(nameValue.Value));
     }
 
-    [Native(Name = "setattr")]
+    [Native(
+        Name = "setattr",
+        Description = "Sets an attribute on an object.",
+        Example = "setattr(user, \"name\", \"Ada\")",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "object", "string", "any" }
+    )]
     public static Obj SetAttr(
         [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Essential = true)] Obj name,
@@ -56,7 +85,13 @@ public static class Inspect
         return newValue;
     }
 
-    [Native(Name = "delattr")]
+    [Native(
+        Name = "delattr",
+        Description = "Deletes an attribute from an object.",
+        Example = "delattr(user, \"name\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "object", "string" }
+    )]
     public static Obj DelAttr(
         [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Essential = true)] Obj name)
@@ -68,7 +103,13 @@ public static class Inspect
         return Obj.None;
     }
 
-    [Native(Name = "meta")]
+    [Native(
+        Name = "meta",
+        Description = "Reads metadata from an object.",
+        Example = "write(meta(value, \"type\"))",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "object", "string" }
+    )]
     public static Obj Meta(
         [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Essential = true)] Obj name)

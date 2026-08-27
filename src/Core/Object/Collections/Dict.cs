@@ -35,7 +35,7 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
 
     public override Dict Clone() => new(new Dictionary<Obj, Obj>(Value));
 
-    public override Str ToStr() => Str.From($"{{{string.Join(", ", Value.Select(x => $"{Str.To(x.Key).Value} {Str.To(x.Value).Value}"))}}}");
+    public override Str ToStr() => Str.From($"{{{string.Join(", ", Value.Select(x => $"{Str.To(x.Key).Value}:{Str.To(x.Value).Value}"))}}}");
 
     public override List ToList() => new([.. Value.Keys.Zip(Value.Values).Select(x => new Tup([x.First, x.Second], ["key", "value"]))]);
 
@@ -55,7 +55,13 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
         return true;
     }
 
-    [Native(Name = "add")]
+    [Native(
+        Name = "add",
+        Description = "Adds a value to data.",
+        Example = "data.add(key, value)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Add(
         [Self] Dict self,
         [ArgInfo(Essential = true)] Obj key,
@@ -65,39 +71,78 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
         return None;
     }
 
-    [Native(Name = "remove")]
+    [Native(
+        Name = "remove",
+        Description = "Removes a value from a dict value.",
+        Example = "data.remove(key)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Remove(
         [Self] Dict self,
         [ArgInfo(Essential = true)] Obj key)
         => Bool.From(self.Value.Remove(key));
 
-    [Native(Name = "get")]
+    [Native(
+        Name = "get",
+        Description = "Gets a value from data.",
+        Example = "data.get(key, defaultValue)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Get(
         [Self] Dict self,
         [ArgInfo(Essential = true)] Obj key,
         [ArgInfo(Optional = true)] Obj defaultValue = null!)
         => self.Value.TryGetValue(key, out var value) ? value : (defaultValue ?? None);
 
-    [Native(Name = "contains_key")]
+    [Native(
+        Name = "contains_key",
+        Description = "Returns the result of data.contains key().",
+        Example = "data.contains_key(key)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj ContainsKey(
         [Self] Dict self,
         [ArgInfo(Essential = true)] Obj key)
         => Bool.From(self.Value.ContainsKey(key));
 
-    [Native(Name = "contains_value")]
+    [Native(
+        Name = "contains_value",
+        Description = "Returns the result of data.contains value().",
+        Example = "data.contains_value(value)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj ContainsValue([Self] Dict self, [ArgInfo(Essential = true)] Obj value)
         => Bool.From(self.Value.ContainsValue(value));
 
-    [Native(Name = "clear")]
+    [Native(
+        Name = "clear",
+        Description = "Removes all values from data.",
+        Example = "data.clear()",
+        ReturnType = "none"
+    )]
     public static Obj Clear([Self] Dict self)
     {
         self.Value.Clear();
         return None;
     }
 
-    [Native(Name = "keys")]
+    [Native(
+        Name = "keys",
+        Description = "Returns the result of data.keys().",
+        Example = "data.keys()",
+        ReturnType = "list"
+    )]
     public static List Keys([Self] Dict self) => new([.. self.Value.Keys]);
 
-    [Native(Name = "values")]
+    [Native(
+        Name = "values",
+        Description = "Returns the result of data.values().",
+        Example = "data.values()",
+        ReturnType = "list"
+    )]
     public static List Values([Self] Dict self) => new([.. self.Value.Values]);
 }

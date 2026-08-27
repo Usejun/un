@@ -11,11 +11,17 @@ public static class IO
     private static Object.IO.Stream _stdout = new(Console.OpenStandardOutput());
     private static Object.IO.Stream _stdin = new(Console.OpenStandardInput());
 
-    [Native(Name = "write")]
+    [Native(
+        Name = "write",
+        Description = "Writes values to standard output.",
+        Example = "write(\"Hello\", \"UN\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "tuple", "string", "string", "stream" }
+    )]
     public static Obj Write(
-        [ArgInfo(Positional = true)]  Obj values, 
-        [ArgInfo(Optional = true)] Obj sep = null!, 
-        [ArgInfo(Optional = true)] Obj end = null!, 
+        [ArgInfo(Positional = true)] Obj values,
+        [ArgInfo(Optional = true)] Obj sep = null!,
+        [ArgInfo(Optional = true)] Obj end = null!,
         [ArgInfo(Optional = true)] Obj stream = null!)
     {
         sep ??= Str.From(" ");
@@ -59,9 +65,15 @@ public static class IO
         return Obj.None;
     }
 
-    [Native(Name = "read")]
+    [Native(
+        Name = "read",
+        Description = "Reads one line from an input stream.",
+        Example = "name = read(\"Name: \")",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string", "stream", "stream" }
+    )]
     public static Obj Read(
-        [ArgInfo(Optional = true)] Obj prompt = null!, 
+        [ArgInfo(Optional = true)] Obj prompt = null!,
         [ArgInfo(Optional = true)] Obj input = null!,
         [ArgInfo(Optional = true)] Obj output = null!)
     {
@@ -95,7 +107,13 @@ public static class IO
         return Str.From(cr?.ReadLine() ?? "");
     }
 
-    [Native(Name = "open")]
+    [Native(
+        Name = "open",
+        Description = "Opens a sandbox-relative file stream.",
+        Example = "stream = open(\"notes.txt\", \"r\")",
+        ReturnType = "stream",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Open(
         [ArgInfo(Essential = true)] Obj path,
         [ArgInfo(Optional = true)] Obj mode = null!)
@@ -126,7 +144,12 @@ public static class IO
         };
     }
 
-    [Native(Name = "clear")]
+    [Native(
+        Name = "clear",
+        Description = "Clears the active output stream.",
+        Example = "clear()",
+        ReturnType = "none"
+    )]
     public static Obj Clear()
     {
         Console.Clear();

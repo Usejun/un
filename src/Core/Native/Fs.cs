@@ -22,7 +22,13 @@ public static class Fs
         return true;
     }
 
-    [Native(Name = "exists")]
+    [Native(
+        Name = "exists",
+        Description = "Checks whether a file or directory exists.",
+        Example = "write(exists(\"notes.txt\"))",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Exists([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -31,7 +37,13 @@ public static class Fs
         return Bool.From(File.Exists(p) || Directory.Exists(p));
     }
 
-    [Native(Name = "file")]
+    [Native(
+        Name = "file",
+        Description = "Checks whether a path is an existing file.",
+        Example = "write(file(\"notes.txt\"))",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj FileExists([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -40,7 +52,13 @@ public static class Fs
         return Bool.From(File.Exists(p));
     }
 
-    [Native(Name = "dir")]
+    [Native(
+        Name = "dir",
+        Description = "Checks whether a path is an existing directory.",
+        Example = "write(dir(\"data\"))",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj DirectoryExists([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -49,7 +67,13 @@ public static class Fs
         return Bool.From(Directory.Exists(p));
     }
 
-    [Native(Name = "read")]
+    [Native(
+        Name = "read",
+        Description = "Reads all text from a file.",
+        Example = "text = read(\"notes.txt\")",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Read([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -61,7 +85,13 @@ public static class Fs
         return Str.From(System.IO.File.ReadAllText(p));
     }
 
-    [Native(Name = "write")]
+    [Native(
+        Name = "write",
+        Description = "Writes text to a file, replacing existing content.",
+        Example = "write(\"notes.txt\", \"Hello\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Write(
         [ArgInfo(Essential = true)] Obj path,
         [ArgInfo(Essential = true)] Obj text)
@@ -77,7 +107,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "append")]
+    [Native(
+        Name = "append",
+        Description = "Appends text to a file.",
+        Example = "append(\"notes.txt\", \"\\nNext line\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Append(
         [ArgInfo(Essential = true)] Obj path,
         [ArgInfo(Essential = true)] Obj text)
@@ -93,7 +129,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "delete")]
+    [Native(
+        Name = "delete",
+        Description = "Deletes a file or directory.",
+        Example = "delete(\"old.txt\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Delete([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -107,7 +149,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "copy")]
+    [Native(
+        Name = "copy",
+        Description = "Copies a file to a destination path.",
+        Example = "copy(\"from.txt\", \"to.txt\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Copy(
         [ArgInfo(Essential = true)] Obj source,
         [ArgInfo(Essential = true)] Obj destination)
@@ -123,7 +171,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "move")]
+    [Native(
+        Name = "move",
+        Description = "Moves a file to a destination path.",
+        Example = "move(\"draft.txt\", \"archive/draft.txt\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Move(
         [ArgInfo(Essential = true)] Obj source,
         [ArgInfo(Essential = true)] Obj destination)
@@ -139,7 +193,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "rename")]
+    [Native(
+        Name = "rename",
+        Description = "Renames a file within its current directory.",
+        Example = "rename(\"draft.txt\", \"final.txt\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Rename(
         [ArgInfo(Essential = true)] Obj path,
         [ArgInfo(Essential = true)] Obj name)
@@ -158,7 +218,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "touch")]
+    [Native(
+        Name = "touch",
+        Description = "Creates a file when it does not exist.",
+        Example = "touch(\"notes.txt\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Touch([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -170,7 +236,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "mkdir")]
+    [Native(
+        Name = "mkdir",
+        Description = "Creates a directory and missing parent directories.",
+        Example = "mkdir(\"data/output\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Mkdir([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -181,7 +253,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "rmdir")]
+    [Native(
+        Name = "rmdir",
+        Description = "Deletes a directory, optionally including its contents.",
+        Example = "rmdir(\"cache\", true)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string", "boolean" }
+    )]
     public static Obj Rmdir(
         [ArgInfo(Essential = true)] Obj path,
         [ArgInfo(Optional = true)] Obj recursive = null!)
@@ -204,7 +282,13 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "list")]
+    [Native(
+        Name = "list",
+        Description = "Lists file-system entries in a directory.",
+        Example = "items = list(\"data\")",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj List([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -213,10 +297,16 @@ public static class Fs
         if (!Directory.Exists(p))
             return new Err("directory not found");
 
-        return new List([..Directory.EnumerateFileSystemEntries(p).Select(Str.From)]);
+        return new List([.. Directory.EnumerateFileSystemEntries(p).Select(Str.From)]);
     }
 
-    [Native(Name = "files")]
+    [Native(
+        Name = "files",
+        Description = "Lists files in a directory.",
+        Example = "items = files(\"data\")",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Files([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -225,10 +315,16 @@ public static class Fs
         if (!Directory.Exists(p))
             return new Err("directory not found");
 
-        return new List([..Directory.EnumerateFiles(p).Select(Str.From)]);
+        return new List([.. Directory.EnumerateFiles(p).Select(Str.From)]);
     }
 
-    [Native(Name = "dirs")]
+    [Native(
+        Name = "dirs",
+        Description = "Lists subdirectories in a directory.",
+        Example = "items = dirs(\"data\")",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Dirs([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -237,10 +333,16 @@ public static class Fs
         if (!Directory.Exists(p))
             return new Err("directory not found");
 
-        return new List([..Directory.EnumerateDirectories(p).Select(Str.From)]);
+        return new List([.. Directory.EnumerateDirectories(p).Select(Str.From)]);
     }
 
-    [Native(Name = "walk")]
+    [Native(
+        Name = "walk",
+        Description = "Lists file-system entries recursively.",
+        Example = "items = walk(\"data\")",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Walk([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -249,10 +351,16 @@ public static class Fs
         if (!Directory.Exists(p))
             return new Err("directory not found");
 
-        return new List([..Directory.EnumerateFileSystemEntries(p, "*", SearchOption.AllDirectories).Select(Str.From)]);
+        return new List([.. Directory.EnumerateFileSystemEntries(p, "*", SearchOption.AllDirectories).Select(Str.From)]);
     }
 
-    [Native(Name = "size")]
+    [Native(
+        Name = "size",
+        Description = "Returns the byte size of a file.",
+        Example = "write(size(\"notes.txt\"))",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Size([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -264,7 +372,13 @@ public static class Fs
         return Int.From(new FileInfo(p).Length);
     }
 
-    [Native(Name = "created")]
+    [Native(
+        Name = "created",
+        Description = "Returns a path creation time in UTC.",
+        Example = "write(created(\"notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Created([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -275,7 +389,13 @@ public static class Fs
         return Str.From(time.ToString("O"));
     }
 
-    [Native(Name = "modified")]
+    [Native(
+        Name = "modified",
+        Description = "Returns a path last-modified time in UTC.",
+        Example = "write(modified(\"notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Modified([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -286,7 +406,13 @@ public static class Fs
         return Str.From(time.ToString("O"));
     }
 
-    [Native(Name = "accessed")]
+    [Native(
+        Name = "accessed",
+        Description = "Returns a path last-accessed time in UTC.",
+        Example = "write(accessed(\"notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Accessed([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -299,7 +425,13 @@ public static class Fs
         return Str.From(time.ToString("O"));
     }
 
-    [Native(Name = "readonly")]
+    [Native(
+        Name = "readonly",
+        Description = "Checks whether a file is read-only.",
+        Example = "write(readonly(\"notes.txt\"))",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Readonly([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -311,7 +443,13 @@ public static class Fs
         return Bool.From(File.GetAttributes(p).HasFlag(FileAttributes.ReadOnly));
     }
 
-    [Native(Name = "hidden")]
+    [Native(
+        Name = "hidden",
+        Description = "Checks whether a path has the hidden attribute.",
+        Example = "write(hidden(\"notes.txt\"))",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Hidden([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -323,7 +461,13 @@ public static class Fs
         return Bool.From(File.GetAttributes(p).HasFlag(FileAttributes.Hidden));
     }
 
-    [Native(Name = "join")]
+    [Native(
+        Name = "join",
+        Description = "Joins path segments using the platform separator.",
+        Example = "path = join(\"data\", \"notes.txt\")",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "tuple" }
+    )]
     public static Obj Join([ArgInfo(Positional = true)] Obj paths)
     {
         if (!paths.As<Tup>(out var tuple))
@@ -342,7 +486,13 @@ public static class Fs
         return Str.From(Path.Combine(values));
     }
 
-    [Native(Name = "parent")]
+    [Native(
+        Name = "parent",
+        Description = "Returns the parent directory of a path.",
+        Example = "write(parent(\"data/notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Parent([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -351,7 +501,13 @@ public static class Fs
         return Str.From(Path.GetDirectoryName(p) ?? "");
     }
 
-    [Native(Name = "name")]
+    [Native(
+        Name = "name",
+        Description = "Returns the file name portion of a path.",
+        Example = "write(name(\"data/notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Name([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -360,7 +516,13 @@ public static class Fs
         return Str.From(Path.GetFileName(p));
     }
 
-    [Native(Name = "stem")]
+    [Native(
+        Name = "stem",
+        Description = "Returns a file name without its extension.",
+        Example = "write(stem(\"notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Stem([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -369,7 +531,13 @@ public static class Fs
         return Str.From(Path.GetFileNameWithoutExtension(p));
     }
 
-    [Native(Name = "ext")]
+    [Native(
+        Name = "ext",
+        Description = "Returns the extension portion of a path.",
+        Example = "write(ext(\"notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Extension([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -378,7 +546,13 @@ public static class Fs
         return Str.From(Path.GetExtension(p));
     }
 
-    [Native(Name = "absolute")]
+    [Native(
+        Name = "absolute",
+        Description = "Returns the absolute form of a path.",
+        Example = "write(absolute(\"notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Absolute([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -387,7 +561,13 @@ public static class Fs
         return Str.From(Path.GetFullPath(p));
     }
 
-    [Native(Name = "relative")]
+    [Native(
+        Name = "relative",
+        Description = "Returns a path relative to another directory.",
+        Example = "write(relative(\"data\", \"data/notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Relative(
         [ArgInfo(Essential = true)] Obj from,
         [ArgInfo(Essential = true)] Obj to)
@@ -401,7 +581,13 @@ public static class Fs
         return Str.From(Path.GetRelativePath(f, t));
     }
 
-    [Native(Name = "normalize")]
+    [Native(
+        Name = "normalize",
+        Description = "Normalizes a path to its absolute form.",
+        Example = "write(normalize(\"data/../notes.txt\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Normalize([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -410,10 +596,21 @@ public static class Fs
         return Str.From(Path.GetFullPath(Path.TrimEndingDirectorySeparator(p)));
     }
 
-    [Native(Name = "cwd")]
+    [Native(
+        Name = "cwd",
+        Description = "Returns the current working directory.",
+        Example = "write(cwd())",
+        ReturnType = "string"
+    )]
     public static Obj Cwd() => Str.From(Environment.CurrentDirectory);
 
-    [Native(Name = "chdir")]
+    [Native(
+        Name = "chdir",
+        Description = "Changes the current working directory.",
+        Example = "chdir(\"data\")",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Chdir([ArgInfo(Essential = true)] Obj path)
     {
         if (!GetPath(path, out var p, out var err))
@@ -426,15 +623,35 @@ public static class Fs
         return Obj.None;
     }
 
-    [Native(Name = "temp")]
+    [Native(
+        Name = "temp",
+        Description = "Returns the system temporary directory.",
+        Example = "write(temp())",
+        ReturnType = "string"
+    )]
     public static Str Temp() => Str.From(Path.GetTempPath());
 
-    [Native(Name = "home")]
+    [Native(
+        Name = "home",
+        Description = "Returns the current user's home directory.",
+        Example = "write(home())",
+        ReturnType = "string"
+    )]
     public static Obj Home() => Str.From(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
 
-    [Native(Name = "exe")]
+    [Native(
+        Name = "exe",
+        Description = "Returns the current process executable path.",
+        Example = "write(exe())",
+        ReturnType = "string"
+    )]
     public static Str Exe() => Str.From(Environment.ProcessPath ?? "");
 
-    [Native(Name = "app")]
+    [Native(
+        Name = "app",
+        Description = "Returns the application base directory.",
+        Example = "write(app())",
+        ReturnType = "string"
+    )]
     public static Str App() => Str.From(AppContext.BaseDirectory);
 }

@@ -22,7 +22,13 @@ public static class Ws
         return true;
     }
 
-    [Native(Name = "connect")]
+    [Native(
+        Name = "connect",
+        Description = "Connects to a WebSocket endpoint.",
+        Example = "socket = connect(\"wss://example.com\")",
+        ReturnType = "web_socket",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Connect([ArgInfo(Essential = true)] Obj url)
     {
         if (!GetString(url, out var u, out var err))

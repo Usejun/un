@@ -1,4 +1,3 @@
-using Un.Object.Collections;
 using Un.Object.Primitive;
 using Un.Object.Type;
 using Un.Reflection;
@@ -29,19 +28,7 @@ public class Range : Iters
 
     public override Range Iter() => this;
 
-    public override List ToList()
-    {
-        var lst = new List();
-        foreach (var v in Default(start, stop, step))
-            lst.Add(v);
-        return lst;
-    }
-
-    public override Tup ToTuple() => ToList().ToTuple();
-
     public override Str ToStr() => Repr();
-
-    public override Spreads Spread() => new(ToList().Value);
 
     public override Range Clone() => new(start, stop, step);
 

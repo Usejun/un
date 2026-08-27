@@ -64,6 +64,13 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
 
     public Obj this[int index] => Value[index];
 
+    public override Tup Init(Tup args) => args switch
+    {
+        { Count: 0 } => this,
+        { Count: 1 } => args[0].ToTuple().As<Tup>(out var t) ? t : args,
+        _ => args
+    };
+
     public override Obj Eq(Obj other)
     {
         if (other is not Tup tup)

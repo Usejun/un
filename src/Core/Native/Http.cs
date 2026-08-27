@@ -6,7 +6,12 @@ namespace Un.Native;
 [NativeModule("http", typeof(Object.Web.HttpClient))]
 public static class Http
 {
-    [Native(Name = "connect")]
+    [Native(
+        Name = "connect",
+        Description = "Creates an HTTP client object.",
+        Example = "client = connect()",
+        ReturnType = "http_client"
+    )]
     public static Obj Connect()
     {
         try

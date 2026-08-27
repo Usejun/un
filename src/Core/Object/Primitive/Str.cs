@@ -7,12 +7,12 @@ namespace Un.Object.Primitive;
 
 [BuiltinType("str")]
 public class Str : Ref<string>
-{   
+{
     public static readonly Str Empty = new();
     private static Dictionary<string, Str> pool = [];
 
     public Str() : this("") { }
-    
+
     private Str(string value) : base(value, UnType.Str) { }
 
     public override Obj Init(Tup args) => args switch
@@ -73,7 +73,7 @@ public class Str : Ref<string>
 
     public override Obj GetItem(Obj other) => other switch
     {
-        Int i => OutOfRange((int)i.Value) ? OutOfRange((int)(i.Value + Value.Length)) ? new Err("list index out of range") : 
+        Int i => OutOfRange((int)i.Value) ? OutOfRange((int)(i.Value + Value.Length)) ? new Err("list index out of range") :
         Str.From($"{this[(int)(i.Value + Value.Length)]}") : Str.From($"{this[(int)i.Value]}"),
         _ => new Err("invalid index type"),
     };
@@ -153,16 +153,37 @@ public class Str : Ref<string>
         return obj.Repr();
     }
 
-    [Native(Name = "is_empty")]
+    [Native(
+        Name = "is_empty",
+        Description = "Checks whether a str value empty.",
+        Example = "text.is_empty()",
+        ReturnType = "boolean"
+    )]
     public static Obj IsEmpty([Self] Str self) => Bool.From(string.IsNullOrEmpty(self.Value));
 
-    [Native(Name = "is_number")]
+    [Native(
+        Name = "is_number",
+        Description = "Checks whether a str value number.",
+        Example = "text.is_number()",
+        ReturnType = "boolean"
+    )]
     public static Obj IsNumber([Self] Str self) => Bool.From(self.Value.All(char.IsDigit));
 
-    [Native(Name = "is_alphabet")]
+    [Native(
+        Name = "is_alphabet",
+        Description = "Checks whether a str value alphabet.",
+        Example = "text.is_alphabet()",
+        ReturnType = "boolean"
+    )]
     public static Obj IsAlphabet([Self] Str self) => Bool.From(self.Value.All(char.IsLetter));
 
-    [Native(Name = "index_of")]
+    [Native(
+        Name = "index_of",
+        Description = "Finds a value index in text.",
+        Example = "text.index_of(value)",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj IndexOf([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
         if (value.As<Str>(out var str))
@@ -171,7 +192,13 @@ public class Str : Ref<string>
         return Int.From(self.Value.IndexOf(str.Value));
     }
 
-    [Native(Name = "contains")]
+    [Native(
+        Name = "contains",
+        Description = "Checks whether text contains a value.",
+        Example = "text.contains(value)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Contains([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
         if (value.As<Str>(out var str))
@@ -180,7 +207,13 @@ public class Str : Ref<string>
         return Bool.From(self.Value.Contains(str.Value));
     }
 
-    [Native(Name = "starts_with")]
+    [Native(
+        Name = "starts_with",
+        Description = "Returns the result of text.starts with().",
+        Example = "text.starts_with(value)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj StartsWith([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
         if (value.As<Str>(out var str))
@@ -189,7 +222,13 @@ public class Str : Ref<string>
         return Bool.From(self.Value.StartsWith(str.Value));
     }
 
-    [Native(Name = "ends_with")]
+    [Native(
+        Name = "ends_with",
+        Description = "Returns the result of text.ends with().",
+        Example = "text.ends_with(value)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj EndsWith([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
         if (value.As<Str>(out var str))
@@ -198,13 +237,29 @@ public class Str : Ref<string>
         return Bool.From(self.Value.EndsWith(str.Value));
     }
 
-    [Native(Name = "to_upper")]
+    [Native(
+        Name = "to_upper",
+        Description = "Converts a str value to upper.",
+        Example = "text.to_upper()",
+        ReturnType = "str"
+    )]
     public static Obj ToUpper([Self] Str self) => From(self.Value.ToUpper());
 
-    [Native(Name = "to_lower")]
+    [Native(
+        Name = "to_lower",
+        Description = "Converts a str value to lower.",
+        Example = "text.to_lower()",
+        ReturnType = "str"
+    )]
     public static Obj ToLower([Self] Str self) => From(self.Value.ToLower());
 
-    [Native(Name = "split")]
+    [Native(
+        Name = "split",
+        Description = "Returns the result of text.split().",
+        Example = "text.split(sep)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Split([Self] Str self, [ArgInfo(Essential = true)] Obj sep)
     {
         if (sep.As<Str>(out var str))
@@ -214,7 +269,13 @@ public class Str : Ref<string>
         return new List([.. parts.Select(From)]);
     }
 
-    [Native(Name = "trim")]
+    [Native(
+        Name = "trim",
+        Description = "Returns the result of text.trim().",
+        Example = "text.trim(chars)",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Trim([Self] Str self, [ArgInfo(Essential = true)] Obj chars)
     {
         if (chars.As<Str>(out var str))
@@ -223,7 +284,13 @@ public class Str : Ref<string>
         return From(self.Value.Trim(str.Value.ToCharArray()));
     }
 
-    [Native(Name = "join")]
+    [Native(
+        Name = "join",
+        Description = "Returns the result of text.join().",
+        Example = "text.join(values)",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Join([Self] Str self, [ArgInfo(Essential = true)] Obj values)
     {
         if (values.Iter().As<Iters>(out var str))
@@ -246,9 +313,15 @@ public class Str : Ref<string>
         return From(string.Join(self.Value, strs));
     }
 
-    [Native(Name = "center")]
+    [Native(
+        Name = "center",
+        Description = "Returns the result of text.center().",
+        Example = "text.center(width, fill)",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Center(
-        [Self] Str self, 
+        [Self] Str self,
         [ArgInfo(Essential = true)] Obj width,
         [ArgInfo(Optional = true)] Obj fill = null!)
     {
@@ -267,7 +340,13 @@ public class Str : Ref<string>
         return From(new string(fillChar, (int)left) + self.Value + new string(fillChar, (int)right));
     }
 
-    [Native(Name = "left")]
+    [Native(
+        Name = "left",
+        Description = "Returns the result of text.left().",
+        Example = "text.left(width, fill)",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Left(
         [Self] Str self,
         [ArgInfo(Essential = true)] Obj width,
@@ -286,7 +365,13 @@ public class Str : Ref<string>
         return From(self.Value + new string(fillChar, (int)pad));
     }
 
-    [Native(Name = "right")]
+    [Native(
+        Name = "right",
+        Description = "Returns the result of text.right().",
+        Example = "text.right(width, fill)",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Right(
        [Self] Str self,
        [ArgInfo(Essential = true)] Obj width,
@@ -305,7 +390,13 @@ public class Str : Ref<string>
         return From(new string(fillChar, (int)pad) + self.Value);
     }
 
-    [Native(Name = "replace")]
+    [Native(
+        Name = "replace",
+        Description = "Returns the result of text.replace().",
+        Example = "text.replace(oldValue, newValue)",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Replace(
        [Self] Str self,
        [ArgInfo(Essential = true)] Obj oldValue,
@@ -319,7 +410,13 @@ public class Str : Ref<string>
         return From(self.Value.Replace(oldStr.Value, newStr.Value));
     }
 
-    [Native(Name = "find")]
+    [Native(
+        Name = "find",
+        Description = "Returns the result of text.find().",
+        Example = "text.find(subStr)",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Find([Self] Str self, [ArgInfo(Essential = true)] Obj subStr)
     {
         if (subStr.As<Str>(out var subStrValue))

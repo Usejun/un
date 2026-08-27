@@ -16,6 +16,9 @@ public class Fn(Context closure) : Obj(UnType.Func)
         scope["self"] = Self;
         scope["super"] = Super;
 
+        if (TryBindSimplePositional(scope, args, out var simpleResult))
+            return simpleResult;
+
         args = UnpackArgs(args);
 
         var positional = new List<Obj>();
@@ -92,6 +95,53 @@ public class Fn(Context closure) : Obj(UnType.Func)
             return new Err($"unexpected keyword argument '{keyword.Keys.First()}'");
 
         return None;
+    }
+
+    private bool TryBindSimplePositional(Scope scope, Tup args, out Obj result)
+    {
+        for (var i = 0; i < args.Count; i++)
+        {
+            if (!string.IsNullOrEmpty(args.Name[i]) || args[i] is Spreads)
+            {
+                result = None;
+                return false;
+            }
+        }
+
+        for (var i = 0; i < Args.Count; i++)
+        {
+            var arg = Args[i];
+
+            if (arg.IsPositional || arg.IsKeyword)
+            {
+                result = None;
+                return false;
+            }
+
+            if (i < args.Count)
+            {
+                scope[arg.Name] = args[i];
+                continue;
+            }
+
+            if (!arg.IsEssential)
+            {
+                scope[arg.Name] = arg.DefaultValue!;
+                continue;
+            }
+
+            result = new Err($"missing required argument '{arg.Name}'");
+            return true;
+        }
+
+        if (args.Count > Args.Count)
+        {
+            result = new Err("too many positional arguments");
+            return true;
+        }
+
+        result = None;
+        return true;
     }
 
     public override Str Repr() => Str.From($"fn({string.Join(", ", Args.Select(x => x.Type))}) -> {ReturnType}");

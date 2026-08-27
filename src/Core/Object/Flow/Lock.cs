@@ -28,7 +28,12 @@ public class Lock : Obj
 
     public override Obj Clone() => new Err("'lock' cannot be cloned");
 
-    [Native(Name = "acquire")]
+    [Native(
+        Name = "acquire",
+        Description = "Returns the result of guard.acquire().",
+        Example = "guard.acquire()",
+        ReturnType = "none"
+    )]
     public static Obj Acquire([Self] Lock self)
     {
         Monitor.Enter(self.syncRoot);
@@ -36,7 +41,12 @@ public class Lock : Obj
         return self;
     }
 
-    [Native(Name = "try_acquire")]
+    [Native(
+        Name = "try_acquire",
+        Description = "Returns the result of guard.try acquire().",
+        Example = "guard.try_acquire()",
+        ReturnType = "boolean"
+    )]
     public static Obj TryAcquire([Self] Lock self)
     {
         bool success = Monitor.TryEnter(self.syncRoot);
@@ -44,7 +54,12 @@ public class Lock : Obj
         return Bool.From(success);
     }
 
-    [Native(Name = "release")]
+    [Native(
+        Name = "release",
+        Description = "Returns the result of guard.release().",
+        Example = "guard.release()",
+        ReturnType = "none"
+    )]
     public static Obj Release([Self] Lock self)
     {
         if (self.isHeld.Value)
@@ -59,7 +74,12 @@ public class Lock : Obj
         return self;
     }
 
-    [Native(Name = "dispose")]
+    [Native(
+        Name = "dispose",
+        Description = "Returns the result of guard.dispose().",
+        Example = "guard.dispose()",
+        ReturnType = "none"
+    )]
     public static Obj Dispose([Self] Lock self)
     {
         if (self.isHeld.Value)

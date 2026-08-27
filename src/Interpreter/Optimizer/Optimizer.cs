@@ -2,19 +2,28 @@
 
 public static class Optimizer
 {
+    public const int MaxPasses = 64;
+
     public static Node Optimize(Node root)
     {
-        while (true)
+        return OptimizeWithStats(root).Root;
+    }
+
+    public static OptimizationResult OptimizeWithStats(Node root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        for (var passCount = 1; passCount <= MaxPasses; passCount++)
         {
             var before = root;
 
             root = OptimizePass(root);
 
             if (ReferenceEquals(before, root))
-                break;
+                return new(root, passCount);
         }
 
-        return root;
+        throw new Panic($"optimizer did not reach a fixed point within {MaxPasses} passes");
     }
 
     private static Node OptimizePass(Node node)
@@ -56,9 +65,6 @@ public static class Optimizer
     {
         var left = node.Children[0];
         var right = node.Children[1];
-
-        left = OptimizePass(left);
-        right = OptimizePass(right);
 
         if (IsConst(left, out var a) && IsConst(right, out var b))
             return Node.Const(Eval(node.Operator, a, b), node.Start, node.Length);
@@ -126,7 +132,7 @@ public static class Optimizer
                     children.Add(child);
                 }
             }
-            else 
+            else
             {
                 var body = OptimizePass(child.Children[0]);
 
@@ -255,3 +261,5 @@ public static class Optimizer
         public Dictionary<string, object> Const = [];
     }
 }
+
+public readonly record struct OptimizationResult(Node Root, int PassCount);

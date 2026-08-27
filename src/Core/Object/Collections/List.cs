@@ -48,7 +48,12 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
 
     public bool IsFull => Count == Value.Length;
 
-    public override Obj Init(Tup args) => args.ToList();
+    public override List Init(Tup args) => args switch
+    {
+        { Count: 0 } => this,
+        { Count: 1 } when args[0].ToList().As<List>(out var list) => list,
+        _ => args.ToList(),
+    };
 
     public override Bool Eq(Obj other)
     {
@@ -75,7 +80,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
 
         if (!OutOfRange(this, (int)i.Value))
             return this[(int)i.Value] = value;
-            
+
         if (!OutOfRange(this, (int)(i.Value + Count)))
             return this[(int)(i.Value + Count)] = value;
 
@@ -134,7 +139,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return true;
     }
 
-    [Native(Name = "add")]
+    [Native(
+        Name = "add",
+        Description = "Adds a value to items.",
+        Example = "items.add(value)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static void Append([Self] List self, [ArgInfo(Essential = true)] Obj value)
     {
         if (self.IsFull) Resize(self);
@@ -142,7 +153,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         self.Count++;
     }
 
-    [Native(Name = "extend")]
+    [Native(
+        Name = "extend",
+        Description = "Adds values to items.",
+        Example = "items.extend(value)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static void Extend([Self] List self, [ArgInfo(Essential = true)] Obj value)
     {
         if (value.Iter().As<Iters>(out var iters))
@@ -150,13 +167,19 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
             foreach (var v in iters.Value)
                 Append(self, v);
         }
-        else           
-        { 
-            Append(self, value); 
+        else
+        {
+            Append(self, value);
         }
     }
 
-    [Native(Name = "insert")]
+    [Native(
+        Name = "insert",
+        Description = "Inserts a value into items.",
+        Example = "items.insert(obj, index)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Insert(
         [Self] List self,
         [ArgInfo(Essential = true)] Obj obj,
@@ -182,7 +205,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return self;
     }
 
-    [Native(Name = "extend_insert")]
+    [Native(
+        Name = "extend_insert",
+        Description = "Returns the result of items.extend insert().",
+        Example = "items.extend_insert(obj, index)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static List ExtendInsert(
         [Self] List self,
         [ArgInfo(Essential = true)] Obj obj,
@@ -204,13 +233,19 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return self;
     }
 
-    [Native(Name = "remove")]
+    [Native(
+        Name = "remove",
+        Description = "Removes a value from a list value.",
+        Example = "items.remove(obj)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Bool Remove([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
         for (int i = 0; i < self.Count; i++)
         {
             if (!self[i].Eq(obj).As<Bool>(out var eq))
-                continue;                
+                continue;
 
             if (eq.Value)
                 return Bool.From(RemoveAt(self, Int.From(i)).As<Bool>(out var res) && res.Value);
@@ -219,7 +254,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return Bool.False;
     }
 
-    [Native(Name = "remove_at")]
+    [Native(
+        Name = "remove_at",
+        Description = "Removes  at from a list value.",
+        Example = "items.remove_at(index)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj RemoveAt([Self] List self, [ArgInfo(Essential = true)] Obj index)
     {
         if (!index.As<Int>(out var idx))
@@ -233,7 +274,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return Bool.True;
     }
 
-    [Native(Name = "index_of")]
+    [Native(
+        Name = "index_of",
+        Description = "Finds a value index in items.",
+        Example = "items.index_of(obj)",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Int IndexOf([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
         for (int i = 0; i < self.Count; i++)
@@ -247,11 +294,23 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return Int.From(-1);
     }
 
-    [Native(Name = "contains")]
-    public static Bool Contains([Self] List self, [ArgInfo(Essential = true)] Obj obj) 
+    [Native(
+        Name = "contains",
+        Description = "Checks whether items contains a value.",
+        Example = "items.contains(obj)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
+    public static Bool Contains([Self] List self, [ArgInfo(Essential = true)] Obj obj)
         => Bool.From(IndexOf(self, obj).Value != -1);
 
-    [Native(Name = "order")]
+    [Native(
+        Name = "order",
+        Description = "Returns the result of items.order().",
+        Example = "items.order(fn)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Order([Self] List self, [ArgInfo(Essential = true)] Obj fn)
     {
         if (fn is not Fn)
@@ -261,25 +320,47 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return None;
     }
 
-    [Native(Name = "sort")]
+    [Native(
+        Name = "sort",
+        Description = "Sorts items in place.",
+        Example = "items.sort()",
+        ReturnType = "none"
+    )]
     public static Obj Sort([Self] List self)
     {
         Array.Sort(self.Value, 0, self.Count);
         return None;
     }
 
-    [Native(Name = "reverse")]
+    [Native(
+        Name = "reverse",
+        Description = "Reverses the order of items.",
+        Example = "items.reverse()",
+        ReturnType = "none"
+    )]
     public static Obj Reverse([Self] List self)
     {
         Array.Reverse(self.Value, 0, self.Count);
         return None;
     }
 
-    [Native(Name = "binary_search")]
-    public static Int BinarySearch([Self] List self, [ArgInfo(Essential = true)] Obj obj) 
+    [Native(
+        Name = "binary_search",
+        Description = "Returns the result of items.binary search().",
+        Example = "items.binary_search(obj)",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "any" }
+    )]
+    public static Int BinarySearch([Self] List self, [ArgInfo(Essential = true)] Obj obj)
         => Int.From(Array.BinarySearch(self.Value, 0, self.Count, obj));
 
-    [Native(Name = "lower_bound")]
+    [Native(
+        Name = "lower_bound",
+        Description = "Returns the result of items.lower bound().",
+        Example = "items.lower_bound(obj)",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj LowerBound([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
         int l = 0, r = self.Count - 1, m = 0;
@@ -297,7 +378,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return Int.From(r);
     }
 
-    [Native(Name = "upper_bound")]
+    [Native(
+        Name = "upper_bound",
+        Description = "Returns the result of items.upper bound().",
+        Example = "items.upper_bound(obj)",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj UpperBound([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
         int l = 0, r = self.Count - 1;
@@ -315,7 +402,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return Int.From(r);
     }
 
-    [Native(Name = "hpush")]
+    [Native(
+        Name = "hpush",
+        Description = "Returns the result of items.hpush().",
+        Example = "items.hpush(obj)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj HPush([Self] List self, [ArgInfo(Essential = true)] Obj obj)
     {
         int child = self.Count;
@@ -334,7 +427,12 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return None;
     }
 
-    [Native(Name = "hpop")]
+    [Native(
+        Name = "hpop",
+        Description = "Returns the result of items.hpop().",
+        Example = "items.hpop()",
+        ReturnType = "any"
+    )]
     public static Obj HPop([Self] List self)
     {
         if (self.Count == 0)
@@ -365,7 +463,13 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return value;
     }
 
-    [Native(Name = "pop")]
+    [Native(
+        Name = "pop",
+        Description = "Returns the result of items.pop().",
+        Example = "items.pop(index)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Pop([Self] List self, [ArgInfo(Essential = true)] Obj index)
     {
         if (!index.As<Int>(out var idx))
@@ -376,11 +480,17 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return value;
     }
 
-    [Native(Name = "map")]
+    [Native(
+        Name = "map",
+        Description = "Returns the result of items.map().",
+        Example = "items.map(type)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Map([Self] List self, [ArgInfo(Essential = true)] Obj type)
     {
         var list = new List();
-        
+
         foreach (var item in self)
         {
             var res = type.Call(Tup.One("", item));
@@ -392,7 +502,12 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         return list;
     }
 
-    [Native(Name = "resize")]
+    [Native(
+        Name = "resize",
+        Description = "Returns the result of items.resize().",
+        Example = "items.resize()",
+        ReturnType = "none"
+    )]
     public static Obj Resize([Self] List self)
     {
         var newValue = new Obj[self.Value.Length * 2 + 1];
@@ -401,7 +516,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         self.Value = newValue;
         return None;
     }
-    
+
     public override int GetHashCode()
     {
         HashCode hash = new();

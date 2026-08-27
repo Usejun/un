@@ -6,25 +6,36 @@ public sealed class Runner(Context context, Context? parentContext = null)
 {
     public Context Context { get; } = context;
     public Context? ParentContext { get; } = parentContext;
+    public OptimizationResult? LastOptimization { get; private set; }
 
     public Obj Run()
     {
+        return RunCore(null);
+    }
+
+    public Obj Run(Node parsedAst)
+    {
+        ArgumentNullException.ThrowIfNull(parsedAst);
+        return RunCore(parsedAst);
+    }
+
+    private Obj RunCore(Node? parsedAst)
+    {
+        LastOptimization = null;
+
         try
         {
-            var lexer = new Lexer(Context.Source);
-            var tokens = lexer.Lex();
-
-            var parser = new Parser(tokens, Context);
-            var ast = parser.Parse();
+            var ast = parsedAst ?? Parse();
 
             var desugarer = new Desugarer();
-            var desuraredAst = desugarer.Desugar(ast);
+            var desugaredAst = desugarer.Desugar(ast);
 
-            var optimizedAst = Optimizer.Optimize(desuraredAst);
+            var optimization = Optimizer.OptimizeWithStats(desugaredAst);
+            LastOptimization = optimization;
 
             var evaluator = new Evaluator(Context);
 
-            return evaluator.Eval(desuraredAst);
+            return evaluator.Eval(optimization.Root);
         }
         catch (BreakFlow bf)
         {
@@ -43,6 +54,15 @@ public sealed class Runner(Context context, Context? parentContext = null)
             RunDefers();
             FreeUsings();
         }
+    }
+
+    private Node Parse()
+    {
+        var lexer = new Lexer(Context.Source);
+        var tokens = lexer.Lex();
+
+        var parser = new Parser(tokens, Context);
+        return parser.Parse();
     }
 
     public void Reset()

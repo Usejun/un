@@ -8,7 +8,13 @@ namespace Un.Native;
 [NativeModule("time", typeof(Stopwatch))]
 public static class Time
 {
-    [Native(Name = "sleep")]
+    [Native(
+        Name = "sleep",
+        Description = "Waits for a number of milliseconds.",
+        Example = "sleep(250)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "number" }
+    )]
     public static Obj Sleep(Obj milliseconds)
     {
         var ms = milliseconds switch
@@ -26,9 +32,19 @@ public static class Time
         return Obj.None;
     }
 
-    [Native(Name = "now")]
+    [Native(
+        Name = "now",
+        Description = "Returns the current date and time.",
+        Example = "write(now())",
+        ReturnType = "date"
+    )]
     public static Date Now() => new(DateTime.Now);
 
-    [Native(Name = "stopwatch")]
-    public static Stopwatch Stopwatch() => new(); 
+    [Native(
+        Name = "stopwatch",
+        Description = "Creates a stopwatch object.",
+        Example = "timer = stopwatch()",
+        ReturnType = "stopwatch"
+    )]
+    public static Stopwatch Stopwatch() => new();
 }

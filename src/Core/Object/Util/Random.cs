@@ -5,16 +5,28 @@ using Un.Reflection;
 
 namespace Un.Object.Util;
 
+[NativeType(Name = "random")]
 public class Random : Ref<System.Random>
 {
     public Random() : base(new(), UnType.Create("random")) { }
 
     public Random(int seed) : base(new(seed), UnType.Create("random")) { }
 
-    [Native(Name = "next")]
+    [Native(
+        Name = "next",
+        Description = "Returns a non-negative pseudo-random integer.",
+        Example = "write(generator.next())",
+        ReturnType = "integer"
+    )]
     public static Int Next([Self] Random self) => Primitive.Int.From(self.Value.Next());
 
-    [Native(Name = "int")]
+    [Native(
+        Name = "int",
+        Description = "Returns a random integer in an inclusive range.",
+        Example = "value = generator.int(1, 6)",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "integer", "integer" }
+    )]
     public static Obj Int(
         [Self] Random self,
         [ArgInfo(Essential = true)] Obj min,
@@ -30,7 +42,13 @@ public class Random : Ref<System.Random>
         return Object.Primitive.Int.From(self.Value.Next((int)minValue.Value, (int)maxValue.Value + 1));
     }
 
-    [Native(Name = "float")]
+    [Native(
+        Name = "float",
+        Description = "Returns a random floating-point value, optionally within a range.",
+        Example = "value = generator.float(0.0, 1.0)",
+        ReturnType = "float",
+        ArgumentTypes = new[] { "float", "float" }
+    )]
     public static Obj Float(
         [Self] Random self,
         [ArgInfo(Optional = true)] Obj min = null!,
@@ -52,10 +70,21 @@ public class Random : Ref<System.Random>
         return new Float(self.Value.NextDouble() * (maxValue.Value - minValue.Value) + minValue.Value);
     }
 
-    [Native(Name = "bool")]
+    [Native(
+        Name = "bool",
+        Description = "Returns a pseudo-random boolean value.",
+        Example = "write(generator.bool())",
+        ReturnType = "boolean"
+    )]
     public static Bool Bool([Self] Random self) => Primitive.Bool.From(self.Value.Next(2) == 0);
 
-    [Native(Name = "bytes")]
+    [Native(
+        Name = "bytes",
+        Description = "Returns a list of pseudo-random byte values.",
+        Example = "values = generator.bytes(16)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "integer" }
+    )]
     public static Obj Bytes(
         [Self] Random self,
         [ArgInfo(Essential = true)] Obj length)
@@ -71,9 +100,15 @@ public class Random : Ref<System.Random>
         return new List([.. bytes.Select(b => Object.Primitive.Int.From(b))]);
     }
 
-    [Native(Name = "shuffle")]
+    [Native(
+        Name = "shuffle",
+        Description = "Shuffles a list in place.",
+        Example = "generator.shuffle(items)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "list" }
+    )]
     public static Obj Shuffle(
-        [Self] Random self, 
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj obj)
     {
         if (!obj.As<List>(out var list))
@@ -82,9 +117,15 @@ public class Random : Ref<System.Random>
         return None;
     }
 
-    [Native(Name = "choice")]
+    [Native(
+        Name = "choice",
+        Description = "Returns a random value from a list.",
+        Example = "item = generator.choice(items)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "list" }
+    )]
     public static Obj Choice(
-        [Self] Random self, 
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj obj)
     {
         if (obj.As<List>(out var list))
@@ -93,7 +134,13 @@ public class Random : Ref<System.Random>
         return new Err("expected 'random.choice' argument to be a list");
     }
 
-    [Native(Name = "choices")]
+    [Native(
+        Name = "choices",
+        Description = "Returns multiple random values from a list with replacement.",
+        Example = "items = generator.choices(values, 3)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "list", "integer" }
+    )]
     public static Obj Choices(
         [Self] Random self,
         [ArgInfo(Essential = true)] Obj obj,
@@ -112,7 +159,13 @@ public class Random : Ref<System.Random>
         return new List([.. indexes.Select(i => list[i])]);
     }
 
-    [Native(Name = "sample")]
+    [Native(
+        Name = "sample",
+        Description = "Returns unique random values from a list.",
+        Example = "items = generator.sample(values, 3)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "list", "integer" }
+    )]
     public static Obj Sample(
         [Self] Random self,
         [ArgInfo(Essential = true)] Obj obj,
@@ -131,9 +184,15 @@ public class Random : Ref<System.Random>
         return new List([.. clone.Value.Take((int)countValue.Value)]);
     }
 
-    [Native(Name = "chance")]
+    [Native(
+        Name = "chance",
+        Description = "Returns true according to a probability from zero to one.",
+        Example = "generator.chance(0.25)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "float" }
+    )]
     public static Obj Chance(
-        [Self] Random self, 
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj probability)
     {
         if (!probability.As<Float>(out var value))
@@ -144,9 +203,15 @@ public class Random : Ref<System.Random>
         return Object.Primitive.Bool.From(self.Value.NextDouble() < value.Value);
     }
 
-    [Native(Name = "seed")]
+    [Native(
+        Name = "seed",
+        Description = "Sets this generator's pseudo-random seed.",
+        Example = "generator.seed(42)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "integer" }
+    )]
     public static Obj Seed(
-        [Self] Random self, 
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj seed)
     {
         if (!seed.As<Int>(out var value))
@@ -156,7 +221,12 @@ public class Random : Ref<System.Random>
         return None;
     }
 
-    [Native(Name = "uuid")]
+    [Native(
+        Name = "uuid",
+        Description = "Returns a new UUID string.",
+        Example = "id = generator.uuid()",
+        ReturnType = "string"
+    )]
     public static Obj UUID([Self] Random self)
     {
         byte[] bytes = new byte[16];
@@ -168,9 +238,15 @@ public class Random : Ref<System.Random>
         return Str.From(new Guid(bytes).ToString());
     }
 
-    [Native(Name = "string")]
+    [Native(
+        Name = "string",
+        Description = "Returns an alphanumeric pseudo-random string.",
+        Example = "token = generator.string(12)",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "integer" }
+    )]
     public static Obj String(
-        [Self] Random self, 
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj length)
     {
         const string Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -183,7 +259,13 @@ public class Random : Ref<System.Random>
         return Str.From(new string([.. Enumerable.Range(0, (int)value.Value).Select(_ => Chars[self.Value.Next(Chars.Length)])]));
     }
 
-    [Native(Name = "weighted")]
+    [Native(
+        Name = "weighted",
+        Description = "Returns a list value selected by matching numeric weights.",
+        Example = "item = generator.weighted(values, weights)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "list", "list" }
+    )]
     public static Obj Weighted(
         [Self] Random self,
         [ArgInfo(Essential = true)] Obj values,
@@ -228,7 +310,13 @@ public class Random : Ref<System.Random>
         return valueList[^1];
     }
 
-    [Native(Name = "range")]
+    [Native(
+        Name = "range",
+        Description = "Returns a shuffled list of integers in a range.",
+        Example = "values = generator.range(1, 10)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "integer", "integer" }
+    )]
     public static Obj Range(
         [Self] Random self,
         [ArgInfo(Essential = true)] Obj start,
@@ -263,9 +351,15 @@ public class Random : Ref<System.Random>
         return list;
     }
 
-    [Native(Name = "value")]
+    [Native(
+        Name = "value",
+        Description = "Returns a random value from an enum instance.",
+        Example = "status = generator.value(Status)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "enum" }
+    )]
     public static Obj Values(
-        [Self] Random self, 
+        [Self] Random self,
         [ArgInfo(Essential = true)] Obj obj)
     {
         if (!obj.As<TObj>(out var t))

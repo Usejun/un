@@ -44,7 +44,13 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
 
     public override Iters Clone() => new(Value);
 
-    [Native(Name = "take")]
+    [Native(
+        Name = "take",
+        Description = "Returns the result of iterator.take().",
+        Example = "iterator.take(n)",
+        ReturnType = "iter",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Take([Self] Iters self, [ArgInfo(Essential = true)] Obj n)
     {
         if (!n.As<Int>(out var nValue))
@@ -53,7 +59,13 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         return new Iters(self.Value.Take((int)nValue.Value));
     }
 
-    [Native(Name = "skip")]
+    [Native(
+        Name = "skip",
+        Description = "Returns the result of iterator.skip().",
+        Example = "iterator.skip(n)",
+        ReturnType = "iter",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Skip([Self] Iters self, [ArgInfo(Essential = true)] Obj n)
     {
         if (!n.As<Int>(out var nValue))
@@ -62,16 +74,37 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         return new Iters(self.Value.Skip((int)nValue.Value));
     }
 
-    [Native(Name = "count")]
+    [Native(
+        Name = "count",
+        Description = "Returns the result of iterator.count().",
+        Example = "iterator.count()",
+        ReturnType = "integer"
+    )]
     public static Obj Count([Self] Iters self) => Int.From(self.Value.Count());
 
-    [Native(Name = "to_list")]
+    [Native(
+        Name = "to_list",
+        Description = "Converts a iter value to list.",
+        Example = "iterator.to_list()",
+        ReturnType = "list"
+    )]
     public static Obj ToList([Self] Iters self) => new List([.. self.Value]);
 
-    [Native(Name = "to_tuple")]
+    [Native(
+        Name = "to_tuple",
+        Description = "Converts a iter value to tuple.",
+        Example = "iterator.to_tuple()",
+        ReturnType = "tuple"
+    )]
     public static Obj ToTuple([Self] Iters self) => new Tup([.. self.Value]);
 
-    [Native(Name = "map")]
+    [Native(
+        Name = "map",
+        Description = "Returns the result of iterator.map().",
+        Example = "iterator.map(fn)",
+        ReturnType = "iter",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Map([Self] Iters self, [ArgInfo(Essential = true)] Obj fn)
     {
         if (fn is not Fn)
@@ -84,7 +117,13 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         }));
     }
 
-    [Native(Name = "filter")]
+    [Native(
+        Name = "filter",
+        Description = "Returns the result of iterator.filter().",
+        Example = "iterator.filter(fn)",
+        ReturnType = "iter",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Filter([Self] Iters self, [ArgInfo(Essential = true)] Obj fn)
     {
         if (fn is not Fn)
@@ -95,9 +134,15 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
             var res = fn.Call(new([x], [""]));
             return res.As<Bool>(out var v) && v.Value;
         }));
-    }    
+    }
 
-    [Native(Name = "any")]
+    [Native(
+        Name = "any",
+        Description = "Returns the result of iterator.any().",
+        Example = "iterator.any(fn)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Any([Self] Iters self, [ArgInfo(Essential = true)] Obj fn)
     {
         if (fn is not Fn)
@@ -112,7 +157,13 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         return Bool.From(result);
     }
 
-    [Native(Name = "all")]
+    [Native(
+        Name = "all",
+        Description = "Returns the result of iterator.all().",
+        Example = "iterator.all(fn)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj All([Self] Iters self, [ArgInfo(Essential = true)] Obj fn)
     {
         if (fn is not Fn)
@@ -127,7 +178,12 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         return Bool.From(result);
     }
 
-    [Native(Name = "sum")]
+    [Native(
+        Name = "sum",
+        Description = "Returns the result of iterator.sum().",
+        Example = "iterator.sum()",
+        ReturnType = "any"
+    )]
     public static Obj Sum([Self] Iters self)
     {
         Obj sum = null!;
@@ -138,9 +194,19 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         return sum ?? None;
     }
 
-    [Native(Name = "first")]
+    [Native(
+        Name = "first",
+        Description = "Returns the result of iterator.first().",
+        Example = "iterator.first()",
+        ReturnType = "any"
+    )]
     public static Obj First([Self] Iters self) => self.Value.FirstOrDefault() ?? None;
 
-    [Native(Name = "last")]
+    [Native(
+        Name = "last",
+        Description = "Returns the result of iterator.last().",
+        Example = "iterator.last()",
+        ReturnType = "any"
+    )]
     public static Obj Last([Self] Iters self) => self.Value.LastOrDefault() ?? None;
 }

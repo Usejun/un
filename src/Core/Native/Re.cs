@@ -39,7 +39,13 @@ public static class Re
         }
     }
 
-    [Native(Name = "test")]
+    [Native(
+        Name = "test",
+        Description = "Checks whether text matches a pattern.",
+        Example = "write(test(\"\\d+\", text))",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Test(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text)
@@ -56,7 +62,13 @@ public static class Re
         return Bool.From(regex.IsMatch(t));
     }
 
-    [Native(Name = "match")]
+    [Native(
+        Name = "match",
+        Description = "Matches a pattern at the start of text.",
+        Example = "write(match(\"^UN\", text))",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Match(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text)
@@ -78,7 +90,13 @@ public static class Re
         return Str.From(m.Value);
     }
 
-    [Native(Name = "search")]
+    [Native(
+        Name = "search",
+        Description = "Searches text for a pattern match.",
+        Example = "write(search(\"UN\", text))",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Search(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text)
@@ -97,7 +115,13 @@ public static class Re
         return m.Success ? Str.From(m.Value) : Obj.None;
     }
 
-    [Native(Name = "find_all")]
+    [Native(
+        Name = "find_all",
+        Description = "Finds every regular-expression match.",
+        Example = "matches = find_all(\"\\d+\", text)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj FindAll(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text)
@@ -116,7 +140,13 @@ public static class Re
         ]);
     }
 
-    [Native(Name = "groups")]
+    [Native(
+        Name = "groups",
+        Description = "Returns capture groups from a match.",
+        Example = "write(groups(pattern, text))",
+        ReturnType = "tuple",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Groups(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text)
@@ -146,7 +176,13 @@ public static class Re
         return new List([.. list]);
     }
 
-    [Native(Name = "replace")]
+    [Native(
+        Name = "replace",
+        Description = "Replaces the first pattern match.",
+        Example = "result = replace(\"cat\", text, \"dog\")",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string", "string", "string" }
+    )]
     public static Obj Replace(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text,
@@ -167,7 +203,13 @@ public static class Re
         return Str.From(regex.Replace(t, r, 1));
     }
 
-    [Native(Name = "replace_all")]
+    [Native(
+        Name = "replace_all",
+        Description = "Replaces every pattern match.",
+        Example = "result = replace_all(\"\\s+\", text, \" \")",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string", "string", "string" }
+    )]
     public static Obj ReplaceAll(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text,
@@ -188,7 +230,13 @@ public static class Re
         return Str.From(regex.Replace(t, r));
     }
 
-    [Native(Name = "split")]
+    [Native(
+        Name = "split",
+        Description = "Splits text on a regular-expression pattern.",
+        Example = "parts = split(\",\\s*\", text)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "string", "string" }
+    )]
     public static Obj Split(
         [ArgInfo(Essential = true)] Obj pattern,
         [ArgInfo(Essential = true)] Obj text)
@@ -207,7 +255,13 @@ public static class Re
         ]);
     }
 
-    [Native(Name = "escape")]
+    [Native(
+        Name = "escape",
+        Description = "Escapes text for a regular expression.",
+        Example = "write(escape(\"a+b\"))",
+        ReturnType = "string",
+        ArgumentTypes = new[] { "string" }
+    )]
     public static Obj Escape([ArgInfo(Essential = true)] Obj text)
     {
         if (!GetString(text, out var t, out var err))

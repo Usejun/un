@@ -1,91 +1,68 @@
+# Un
 
-# Un 언어 입문 안내서
-
-## 1. 개요
-
-Un은 현대적인 문법과 비동기 처리, 안전성을 중시하는 프로그래밍 언어입니다. Rust, Go, Python 등 최신 언어들의 장점을 간결한 문법으로 통합한 것이 특징입니다.
-이 언어는 함수 중심의 설계와 명시적 흐름, 패턴 매칭 및 비동기 처리를 기본으로 제공합니다.
-
----
-
-## 2. 주요 특징
-
-* 함수형 스타일 지향 (객체지향은 보조적인 수준)
-* 모든 함수는 비동기 실행이 가능하며 `wait`로 결과를 기다릴 수 있음
-* `go` 키워드로 비동기 작업을 백그라운드 실행 가능
-* 구조 분해, 패턴 매칭 등 최신 언어 기능 내장
-* 파일 기반 모듈 시스템 (`use` 키워드)
-* 자원 관리를 위한 `using` 키워드 제공
-* 문자열 보간 및 tagged template 문자열 지원
+<p align="center">
+  <img src="https://img.shields.io/badge/language-Un-blue" />
+  <img src="https://img.shields.io/badge/status-development-orange" />
+  <img src="https://img.shields.io/badge/license-MIT-green" />
+</p>
 
 ---
 
-## 3. 기본 문법
+## 주요 기능
 
-### 변수 선언
+* 간결하고 표현력 있는 문법
+* 비동기 프로그래밍 기본 지원
+* `wait`와 `go`를 통한 명시적인 비동기 제어
+* 함수형 프로그래밍
+* 패턴 매칭
+* 구조 분해
+* `use`를 이용한 모듈 시스템
+* `using`을 이용한 자원 관리
+* 문자열 보간 및 Tagged Template
+* 클래스
+* 기본 인자 및 키워드 인자
 
-동적 타이핑을 지원하며, 명시적으로 타입 힌트를 표시할 수 있습니다.
+---
 
-```
+## Playground
+
+설치 없이 웹 브라우저에서 Un을 직접 사용해 볼 수 있습니다.
+
+**[Un Playground](https://unlangplay-8i2jhcwv.manus.space/)**
+
+---
+
+## 빠른 시작
+
+### 변수
+
+```un
 x = 10
-y: int = 20
+name = "Un"
+
+value: int = 20
 ```
 
-### 함수 정의
+### 함수
 
-Un의 모든 함수는 `fn`으로 정의하며, `->` 키워드를 사용해 반환합니다.
-단일 표현식도 항상 `->`를 사용합니다.
-
-예시:
-
-```
+```un
 fn add(a, b) -> int
     -> a + b
+
+result = add(10, 20)
 ```
 
-예시:
+### 비동기
 
-```
-fn(a, b) -> a + b
-```
-
-
-## 4. 비동기 프로그래밍
-
-Un의 함수는 기본적으로 비동기이며, 실행 결과를 기다리기 위해 `wait`를 사용합니다.
-`go` 키워드를 사용하면 함수를 백그라운드에서 실행할 수 있습니다.
-
-예시:
-
-```
+```un
 data = wait fetch("https://example.com")
 
 go downloadFile("file.zip")
 ```
 
----
+### 패턴 매칭
 
-## 5. 패키지 시스템
-
-다른 파일이나 라이브러리를 불러오려면 `use` 키워드를 사용합니다.
-
-예시:
-
-```
-use math
-use net.http as http
-```
-
----
-
-## 6. 패턴 매칭
-
-Un은 `match`를 통해 다양한 조건을 간결하게 처리할 수 있습니다.
-패턴 매칭은 값뿐만 아니라 구조에 대해서도 동작합니다.
-
-예시:
-
-```
+```un
 match x {
     0: "zero",
     1: "one",
@@ -95,98 +72,103 @@ match x {
 
 ---
 
-## 7. 구조 분해 할당
+## 사용법
 
-튜플이나 객체의 값을 간편하게 분해할 수 있습니다.
+### 모듈
 
-예시:
+```un
+use net.http as http
 
+res = wait http.get("https://example.com")
+
+write(res.body)
 ```
+
+### 구조 분해
+
+```un
 a, b = (1, 2)
 x, y = point
 ```
 
----
+### 자원 관리
 
-## 8. 문자열 보간과 템플릿 문자열
+```un
+using file = open("log.txt")
 
-문자열 안에서 변수 값을 삽입할 수 있습니다.
-또한 JavaScript 스타일의 tagged template 문자열도 지원됩니다.
-
-예시:
-
+file.write("hello")
 ```
-name = "Un"
-write(`Hello, {name}!`)
 
+### 클래스
+
+```un
+class Person
+    name = ""
+
+    fn greet()
+        write(`Hi, I'm {name}`)
+```
+
+### 문자열 보간
+
+```un
+name = "Un"
+
+write(`Hello, {name}!`)
+```
+
+Tagged Template도 지원합니다.
+
+```un
 html`<div>{user.name}</div>`
 ```
 
 ---
 
-## 9. 자원 관리 (`using`)
+## 언어 문법
 
-파일이나 네트워크 연결 등 정리해야 하는 자원을 `using`으로 선언하면, 해당 블록이 끝날 때 자동으로 해제됩니다.
-
-예시:
-
-```
-using file = open("log.txt")
-file.write("hello")
-```
-
----
-
-## 10. 클래스
-
-Un은 간단한 형태의 클래스도 지원합니다. 생성자는 자동 생성되며, 멤버 변수는 초기화 이후 기본적으로 읽기 전용입니다.
-
-예시:
-
-```
-class Person
-    name = 0
-    age = 0
-    fn greet() 
-        write(`Hi, I'm {name}`)
-```
+| 기능       | 문법                       |
+| -------- | ------------------------ |
+| 변수       | `x = 10`                 |
+| 타입 지정    | `x: int = 10`            |
+| 함수       | `fn add(a, b) -> a + b`  |
+| 비동기 대기   | `wait expression`        |
+| 백그라운드 실행 | `go expression`          |
+| 모듈       | `use math`               |
+| 모듈 별칭    | `use net.http as http`   |
+| 패턴 매칭    | `match x { ... }`        |
+| 구조 분해    | `a, b = (1, 2)`          |
+| 자원 관리    | `using file = open(...)` |
+| 문자열 보간   | `` `Hello, {name}` ``    |
+| 클래스      | `class Person`           |
 
 ---
 
-## 11. 디폴트 인자와 키워드 인자
+## 아키텍처
 
-함수 인자에 기본값을 설정할 수 있고, 호출 시 이름을 명시하는 키워드 인자도 사용할 수 있습니다.
-
-예시:
-
+```text
+소스 코드
+    |
+    v
+  Lexer
+    |
+    v
+  Parser
+    |
+    v
+ AST / IR
+    |
+    v
+ Runtime
+    |
+    v
+Standard Library
 ```
-fn greet(name = "World") 
-    write(`Hello, {name}`)
 
-greet()                 // Hello, World
-greet(name = "Un")      // Hello, Un
-```
+Un은 Lexer, Parser, Runtime, Standard Library로 구성된 언어 처리 구조를 기반으로 개발되고 있습니다.
 
 ---
 
-## 12. 실용 예제
+## License
 
-```
-use net.http as http
-
-res = wait http.get("https://example.com")
-write(res.body)
-```
-
----
-
-## 13. 철학
-
-Un은 다음과 같은 철학을 바탕으로 설계되었습니다:
-
-1. **단순함**: 최소한의 코드로 최대의 효율을 얻어야 합니다.
-2. **명시성 우선**: 모든 흐름은 명확하게 표현되어야 합니다 (`->`, `wait` 등).
-3. **비동기 중심**: 비동기 처리는 핵심 기능으로 기본 내장됩니다.
-4. **함수형 표현력**: 패턴 매칭, 구조 분해, 일급 함수 등 현대적 표현을 지향합니다.
-
----
+MIT License

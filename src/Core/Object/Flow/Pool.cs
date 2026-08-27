@@ -50,7 +50,13 @@ public class Pool : Obj
 
     public override Obj Clone() => new Err("'lock' cannot be cloned");
 
-    [Native(Name = "submit")]
+    [Native(
+        Name = "submit",
+        Description = "Returns the result of workers.submit().",
+        Example = "workers.submit(fn, args)",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Submit(
         [Self] Pool self,
         [ArgInfo(Essential = true)] Obj fn,
@@ -67,7 +73,13 @@ public class Pool : Obj
         return future;
     }
 
-    [Native(Name = "map")]
+    [Native(
+        Name = "map",
+        Description = "Returns the result of workers.map().",
+        Example = "workers.map(fn, vargs)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "any", "any" }
+    )]
     public static Obj Map(
         [Self] Pool self,
         [ArgInfo(Essential = true)] Obj fn,
@@ -102,7 +114,12 @@ public class Pool : Obj
         return new List([.. result]);
     }
 
-    [Native(Name = "close")]
+    [Native(
+        Name = "close",
+        Description = "Closes workers.",
+        Example = "workers.close()",
+        ReturnType = "none"
+    )]
     public static Obj Close([Self] Pool self)
     {
         self.queue.CompleteAdding();

@@ -227,7 +227,8 @@ public sealed class Evaluator(Context context)
 
     private Tup EvalArguments(Node tupleNode)
     {
-        var args = new List<(string Name, Obj Value)>();
+        var values = new List<Obj>(tupleNode.Children.Count);
+        var names = new List<string>(tupleNode.Children.Count);
 
         foreach (var arg in tupleNode.Children)
         {
@@ -244,9 +245,13 @@ public sealed class Evaluator(Context context)
                             throw new Error(err.Message, arg, context.Source, header: err.Header);
 
                         foreach (var value in unpack)
-                            args.Add(("", value));
+                        {
+                            values.Add(value);
+                            names.Add(string.Empty);
+                        }
                         break;
                     }
+
                 case NodeKind.KwSpread:
                     {
                         var value = Eval(arg.Children[0]);
@@ -254,14 +259,17 @@ public sealed class Evaluator(Context context)
                         if (value is not Dict dict)
                             throw new Error("** argument must be dict", arg, context.Source);
 
-                        foreach (var (k, v) in dict.Value)
-                            args.Add((k.As<Str>(out var str) ? str.Value : k.Repr().Value, v));
-
+                        foreach (var (key, item) in dict.Value)
+                        {
+                            values.Add(item);
+                            names.Add(key.As<Str>(out var str) ? str.Value : key.Repr().Value);
+                        }
                         break;
                     }
 
                 case NodeKind.Pair:
-                    args.Add((GetText(arg.Children[0]), Eval(arg.Children[1])));
+                    values.Add(Eval(arg.Children[1]));
+                    names.Add(GetText(arg.Children[0]));
                     break;
 
                 default:
@@ -271,14 +279,14 @@ public sealed class Evaluator(Context context)
                         if (value is Err err)
                             throw new Error(err.Message, arg, context.Source, header: err.Header);
 
-                        args.Add(("", value));
+                        values.Add(value);
+                        names.Add(string.Empty);
                         break;
-
                     }
             }
         }
 
-        return new Tup([.. args.Select(x => x.Value)], [.. args.Select(x => x.Name)]);
+        return new Tup([.. values], [.. names]);
     }
 
     private Obj EvalCall(Node node)

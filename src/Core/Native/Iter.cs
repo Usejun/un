@@ -49,7 +49,13 @@ public static class Iter
         return true;
     }
 
-    [Native(Name = "iter")]
+    [Native(
+        Name = "iter",
+        Description = "Creates an iterator from a value.",
+        Example = "items = iter(values)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "iterable", "integer" }
+    )]
     public static Obj Array(
         [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Positional = true)] Obj size = null!)
@@ -84,7 +90,13 @@ public static class Iter
         }
     }
 
-    [Native(Name = "range")]
+    [Native(
+        Name = "range",
+        Description = "Creates a sequence of integers.",
+        Example = "for index in range(0, 3)\n    write(index)",
+        ReturnType = "iter",
+        ArgumentTypes = new[] { "integer", "integer", "integer" }
+    )]
     public static Obj Range(
         [ArgInfo(Essential = true)] Obj start,
         [ArgInfo(Optional = true)] Obj end = null!,
@@ -109,7 +121,13 @@ public static class Iter
         return new Object.Iter.Range(intStart.Value, intEnd.Value, intStep.Value);
     }
 
-    [Native(Name = "counter")]
+    [Native(
+        Name = "counter",
+        Description = "Creates an unbounded integer counter.",
+        Example = "numbers = counter(0)",
+        ReturnType = "counter",
+        ArgumentTypes = new[] { "integer" }
+    )]
     public static Obj Counter([ArgInfo(Optional = true)] Obj start = null!)
     {
         start ??= Int.From(0);
@@ -119,7 +137,13 @@ public static class Iter
         return new Counter(intStart.Value);
     }
 
-    [Native(Name = "reverse")]
+    [Native(
+        Name = "reverse",
+        Description = "Iterates over values in reverse order.",
+        Example = "items = reverse(values)",
+        ReturnType = "reverse",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Reverse([ArgInfo(Essential = true)] Obj obj)
     {
         if (!obj.Iter().As<Iters>(out var iter))
@@ -127,7 +151,13 @@ public static class Iter
         return new Reverse(iter.Value);
     }
 
-    [Native(Name = "repeat")]
+    [Native(
+        Name = "repeat",
+        Description = "Repeats an iterable a fixed number of times.",
+        Example = "items = repeat(values, 3)",
+        ReturnType = "repeat",
+        ArgumentTypes = new[] { "iterable", "integer" }
+    )]
     public static Obj Repeat(
         [ArgInfo(Essential = true)] Obj obj,
         [ArgInfo(Optional = true)] Obj count = null!)
@@ -143,7 +173,13 @@ public static class Iter
         return new Repeat(iter.Value, countValue.Value);
     }
 
-    [Native(Name = "zip")]
+    [Native(
+        Name = "zip",
+        Description = "Combines corresponding values from iterables.",
+        Example = "pairs = zip(first, second)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Zip([ArgInfo(Positional = true)] Obj iterables)
     {
         if (!iterables.As<Iters>(out var arrays))
@@ -176,7 +212,13 @@ public static class Iter
         return list;
     }
 
-    [Native(Name = "enumerate")]
+    [Native(
+        Name = "enumerate",
+        Description = "Pairs iterable values with their indexes.",
+        Example = "for pair in enumerate(items)\n    write(pair)",
+        ReturnType = "iter",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Enumerate([ArgInfo(Essential = true)] Obj iterable)
     {
         if (!iterable.Iter().As<Iters>(out var iter))
@@ -185,7 +227,13 @@ public static class Iter
         return new Iters(iter.Value.Select((x, i) => new Tup([Int.From(i), x], ["index", "value"])));
     }
 
-    [Native(Name = "sum")]
+    [Native(
+        Name = "sum",
+        Description = "Adds all values in an iterable.",
+        Example = "write(sum(values))",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Sum([ArgInfo(Positional = true)] Obj iterable)
     {
         if (!NormalizeToTuple(iterable, out var values, out var err))
@@ -206,7 +254,13 @@ public static class Iter
         return total;
     }
 
-    [Native(Name = "max")]
+    [Native(
+        Name = "max",
+        Description = "Returns the greatest value in an iterable.",
+        Example = "write(max(values))",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Max([ArgInfo(Positional = true)] Obj iterable)
     {
         if (!NormalizeToTuple(iterable, out var values, out var err))
@@ -228,7 +282,13 @@ public static class Iter
         return max;
     }
 
-    [Native(Name = "min")]
+    [Native(
+        Name = "min",
+        Description = "Returns the smallest value in an iterable.",
+        Example = "write(min(values))",
+        ReturnType = "any",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Min([ArgInfo(Positional = true)] Obj iterable)
     {
         if (!NormalizeToTuple(iterable, out var values, out var err))
@@ -250,7 +310,13 @@ public static class Iter
         return min;
     }
 
-    [Native(Name = "filter")]
+    [Native(
+        Name = "filter",
+        Description = "Keeps iterable values for which a predicate returns true.",
+        Example = "positives = filter(is_positive, values)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "function", "iterable" }
+    )]
     public static Obj Filter(
         [ArgInfo(Essential = true)] Obj predicate,
         [ArgInfo(Essential = true)] Obj iterable)
@@ -277,7 +343,13 @@ public static class Iter
         return list;
     }
 
-    [Native(Name = "map")]
+    [Native(
+        Name = "map",
+        Description = "Transforms every value in an iterable.",
+        Example = "doubled = map(double, values)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "function", "iterable" }
+    )]
     public static Obj Map(
         [ArgInfo(Essential = true)] Obj transform,
         [ArgInfo(Essential = true)] Obj iterable)
@@ -300,7 +372,13 @@ public static class Iter
         return list;
     }
 
-    [Native(Name = "take")]
+    [Native(
+        Name = "take",
+        Description = "Takes a number of values from an iterable.",
+        Example = "first = take(3, values)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "integer", "iterable" }
+    )]
     public static Obj Take(
         [ArgInfo(Essential = true)] Obj count,
         [ArgInfo(Essential = true)] Obj iterable)
@@ -329,7 +407,13 @@ public static class Iter
         return list;
     }
 
-    [Native(Name = "skip")]
+    [Native(
+        Name = "skip",
+        Description = "Skips a number of values in an iterable.",
+        Example = "rest = skip(2, values)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "integer", "iterable" }
+    )]
     public static Obj Skip(
         [ArgInfo(Essential = true)] Obj count,
         [ArgInfo(Essential = true)] Obj iterable)
@@ -356,7 +440,13 @@ public static class Iter
         return list;
     }
 
-    [Native(Name = "chain")]
+    [Native(
+        Name = "chain",
+        Description = "Concatenates multiple iterables into one sequence.",
+        Example = "items = chain(first, second)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Chain([ArgInfo(Positional = true)] Obj iterables)
     {
         if (!iterables.As<Iters>(out var arrays))
@@ -376,7 +466,13 @@ public static class Iter
         return list;
     }
 
-    [Native(Name = "flatten")]
+    [Native(
+        Name = "flatten",
+        Description = "Flattens nested iterable values.",
+        Example = "flat = flatten(groups)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Flatten([ArgInfo(Essential = true)] Obj iterable)
     {
         if (!iterable.Iter().As<Iters>(out var iter))
@@ -400,7 +496,13 @@ public static class Iter
         return list;
     }
 
-    [Native(Name = "all")]
+    [Native(
+        Name = "all",
+        Description = "Checks whether every iterable item matches a predicate.",
+        Example = "all(is_valid, values)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "function", "iterable" }
+    )]
     public static Obj All(
         [ArgInfo(Essential = true)] Obj predicate,
         [ArgInfo(Essential = true)] Obj iterable)
@@ -425,7 +527,13 @@ public static class Iter
         return Bool.From(true);
     }
 
-    [Native(Name = "any")]
+    [Native(
+        Name = "any",
+        Description = "Checks whether at least one iterable item matches a predicate.",
+        Example = "any(is_ready, tasks)",
+        ReturnType = "boolean",
+        ArgumentTypes = new[] { "function", "iterable" }
+    )]
     public static Obj Any(
         [ArgInfo(Essential = true)] Obj predicate,
         [ArgInfo(Essential = true)] Obj iterable)
@@ -450,7 +558,13 @@ public static class Iter
         return Bool.From(false);
     }
 
-    [Native(Name = "count")]
+    [Native(
+        Name = "count",
+        Description = "Counts iterable items that match a predicate.",
+        Example = "write(count(is_even, values))",
+        ReturnType = "integer",
+        ArgumentTypes = new[] { "function", "iterable" }
+    )]
     public static Obj Count(
         [ArgInfo(Essential = true)] Obj predicate,
         [ArgInfo(Essential = true)] Obj iterable)
@@ -477,7 +591,13 @@ public static class Iter
         return Int.From(total);
     }
 
-    [Native(Name = "sorted")]
+    [Native(
+        Name = "sorted",
+        Description = "Returns iterable values in sorted order.",
+        Example = "ordered = sorted(values)",
+        ReturnType = "list",
+        ArgumentTypes = new[] { "iterable" }
+    )]
     public static Obj Sorted([ArgInfo(Essential = true)] Obj iterable)
     {
         if (!iterable.Iter().As<Iters>(out var iter))

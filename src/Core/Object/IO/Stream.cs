@@ -4,6 +4,7 @@ using Un.Reflection;
 
 namespace Un.Object.IO;
 
+[NativeType(Name = "stream")]
 public class Stream : Ref<System.IO.Stream>, IDisposable
 {
     public StreamReader? Reader { get; }
@@ -28,7 +29,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
     public override Obj Exit()
     {
         Close();
-        return None; 
+        return None;
     }
 
     public void Close()
@@ -45,7 +46,12 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    [Native(Name = "read")]
+    [Native(
+        Name = "read",
+        Description = "Reads all remaining text from a stream.",
+        Example = "stream.read()",
+        ReturnType = "string"
+    )]
     public static Obj Read([Self] Stream self)
     {
         if (!self.CanRead)
@@ -54,7 +60,12 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return Str.From(self.Reader!.ReadToEnd());
     }
 
-    [Native(Name = "read_line")]
+    [Native(
+        Name = "read_line",
+        Description = "Reads the next line from a stream.",
+        Example = "line = stream.read_line()",
+        ReturnType = "string"
+    )]
     public static Obj ReadLine([Self] Stream self)
     {
         if (!self.CanRead)
@@ -64,7 +75,13 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return line is null ? None : Str.From(line);
     }
 
-    [Native(Name = "write")]
+    [Native(
+        Name = "write",
+        Description = "Writes a value to a stream without a trailing line break.",
+        Example = "stream.write(value)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj Write([Self] Stream self, [ArgInfo(Essential = true)] Obj value)
     {
         if (!self.CanWrite)
@@ -74,7 +91,13 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return None;
     }
 
-    [Native(Name = "write_line")]
+    [Native(
+        Name = "write_line",
+        Description = "Writes a value and a trailing line break to a stream.",
+        Example = "stream.write_line(value)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "any" }
+    )]
     public static Obj WriteLine(
         [Self] Stream self,
         [ArgInfo(Essential = true)] Obj value)
@@ -86,7 +109,12 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return None;
     }
 
-    [Native(Name = "flush")]
+    [Native(
+        Name = "flush",
+        Description = "Flushes buffered stream output.",
+        Example = "stream.flush()",
+        ReturnType = "none"
+    )]
     public static Obj Flush([Self] Stream self)
     {
         if (!self.CanWrite)
@@ -96,14 +124,25 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return None;
     }
 
-    [Native(Name = "close")]
+    [Native(
+        Name = "close",
+        Description = "Closes and disposes a stream.",
+        Example = "stream.close()",
+        ReturnType = "none"
+    )]
     public static Obj Close([Self] Stream self)
     {
         self.Close();
         return None;
     }
 
-    [Native(Name = "seek")]
+    [Native(
+        Name = "seek",
+        Description = "Seeks to an absolute byte position in a stream.",
+        Example = "stream.seek(0)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "integer" }
+    )]
     public static Obj Seek(
         [Self] Stream self,
         [ArgInfo(Essential = true)] Int position)
@@ -115,7 +154,12 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return None;
     }
 
-    [Native(Name = "position")]
+    [Native(
+        Name = "position",
+        Description = "Returns the current byte position in a stream.",
+        Example = "write(stream.position())",
+        ReturnType = "integer"
+    )]
     public static Obj Position([Self] Stream self)
     {
         if (!self.Value.CanSeek)
@@ -124,7 +168,13 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return Int.From(self.Value.Position);
     }
 
-    [Native(Name = "set_position")]
+    [Native(
+        Name = "set_position",
+        Description = "Sets the current byte position in a stream.",
+        Example = "stream.set_position(0)",
+        ReturnType = "none",
+        ArgumentTypes = new[] { "integer" }
+    )]
     public static Obj SetPosition(
         [Self] Stream self,
         [ArgInfo(Essential = true)] Int position)
@@ -136,7 +186,12 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return None;
     }
 
-    [Native(Name = "length")]
+    [Native(
+        Name = "length",
+        Description = "Returns the stream length in bytes.",
+        Example = "write(stream.length())",
+        ReturnType = "integer"
+    )]
     public static Obj Length([Self] Stream self)
     {
         if (!self.Value.CanSeek)
@@ -145,7 +200,12 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return Int.From(self.Value.Length);
     }
 
-    [Native(Name = "eof")]
+    [Native(
+        Name = "eof",
+        Description = "Checks whether a readable stream reached end of file.",
+        Example = "write(stream.eof())",
+        ReturnType = "boolean"
+    )]
     public static Obj EndOfFile([Self] Stream self)
     {
         if (!self.CanRead)
@@ -154,12 +214,27 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         return Bool.From(self.Reader!.EndOfStream);
     }
 
-    [Native(Name = "can_read")]
+    [Native(
+        Name = "can_read",
+        Description = "Checks whether a stream supports reading.",
+        Example = "write(stream.can_read())",
+        ReturnType = "boolean"
+    )]
     public static Bool _CanRead([Self] Stream self) => Bool.From(self.Value.CanRead);
 
-    [Native(Name = "can_write")]
+    [Native(
+        Name = "can_write",
+        Description = "Checks whether a stream supports writing.",
+        Example = "write(stream.can_write())",
+        ReturnType = "boolean"
+    )]
     public static Bool _CanWrite([Self] Stream self) => Bool.From(self.Value.CanWrite);
 
-    [Native(Name = "can_seek")]
+    [Native(
+        Name = "can_seek",
+        Description = "Checks whether a stream supports seeking.",
+        Example = "write(stream.can_seek())",
+        ReturnType = "boolean"
+    )]
     public static Bool CanSeek([Self] Stream self) => Bool.From(self.Value.CanSeek);
 }
