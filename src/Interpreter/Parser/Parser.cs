@@ -68,33 +68,65 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
     {
         var annotations = ParseAnnotations();
 
+        Node statement;
+
         if (IsAssignmentStart())
-            return RequireNoAnnotations(annotations, ParseAssignment);
-
-        return Current.Type switch
         {
-            TokenType.Use => RequireNoAnnotations(annotations, ParseUse),
-            TokenType.Using => RequireNoAnnotations(annotations, ParseUsing),
+            statement = RequireNoAnnotations(annotations, ParseAssignment);
+        }
+        else
+        {
+            statement = Current.Type switch
+            {
+                TokenType.Use => RequireNoAnnotations(annotations, ParseUse),
+                TokenType.Using => RequireNoAnnotations(annotations, ParseUsing),
 
-            TokenType.Class => ParseClass(annotations),
-            TokenType.Enum => ParseEnum(annotations),
-            TokenType.Func => ParseFunction(annotations),
+                TokenType.Class => ParseClass(annotations),
+                TokenType.Enum => ParseEnum(annotations),
+                TokenType.Func => ParseFunction(annotations),
 
-            TokenType.If => RequireNoAnnotations(annotations, ParseIf),  
+                TokenType.If => RequireNoAnnotations(annotations, ParseIf),
 
-            TokenType.For => RequireNoAnnotations(annotations, ParseFor),
-            TokenType.While => RequireNoAnnotations(annotations, ParseWhile),
+                TokenType.For => RequireNoAnnotations(annotations, ParseFor),
+                TokenType.While => RequireNoAnnotations(annotations, ParseWhile),
 
-            TokenType.Try => RequireNoAnnotations(annotations, ParseTry),
-            TokenType.Defer => RequireNoAnnotations(annotations, ParseDefer),
+                TokenType.Try => RequireNoAnnotations(annotations, ParseTry),
+                TokenType.Defer => RequireNoAnnotations(annotations, ParseDefer),
 
-            TokenType.Break => RequireNoAnnotations(annotations, ParseBreak),
-            TokenType.Skip => RequireNoAnnotations(annotations, ParseSkip),
-            TokenType.Return => RequireNoAnnotations(annotations, ParseReturn),
+                TokenType.Break => RequireNoAnnotations(annotations, ParseBreak),
+                TokenType.Skip => RequireNoAnnotations(annotations, ParseSkip),
+                TokenType.Return => RequireNoAnnotations(annotations, ParseReturn),
 
-            _ => RequireNoAnnotations(annotations, ParseExpression)
-        };
+                _ => RequireNoAnnotations(annotations, ParseExpression)
+            };
+        }
+
+        if (!IsEndOfStatement && !IsStatementStart(Current.Type))
+            throw new Error($"unexpected token {Current.Type}", Current.Start, Current.Length, source);
+
+        return statement;
     }
+
+    private bool IsStatementStart(TokenType type) => type switch
+    {
+        TokenType.Identifier => true,
+
+        TokenType.Use or
+        TokenType.Using or
+        TokenType.Class or
+        TokenType.Enum or
+        TokenType.Func or
+        TokenType.If or
+        TokenType.For or
+        TokenType.While or
+        TokenType.Try or
+        TokenType.Defer or
+        TokenType.Break or
+        TokenType.Skip or
+        TokenType.Return => true,
+
+        _ => false
+    };
 
     private Node ParseAnnotation()
     {
