@@ -27,8 +27,8 @@ public static class Os
         Name = "env",
         Description = "Reads an environment variable by name.",
         Example = "write(env(\"HOME\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Env([ArgInfo(Essential = true)] Obj name)
     {
@@ -48,7 +48,7 @@ public static class Os
         Description = "Sets an environment variable.",
         Example = "setenv(\"MODE\", \"test\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj SetEnv(
         [ArgInfo(Essential = true)] Obj name,
@@ -70,7 +70,7 @@ public static class Os
         Description = "Removes an environment variable.",
         Example = "unsetenv(\"MODE\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj UnsetEnv([ArgInfo(Essential = true)] Obj name)
     {
@@ -103,8 +103,8 @@ public static class Os
         Name = "expand_vars",
         Description = "Expands environment-variable placeholders in text.",
         Example = "path = expand_vars(\"$HOME/data\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj ExpandVars([ArgInfo(Essential = true)] Obj text)
     {
@@ -118,7 +118,7 @@ public static class Os
         Name = "pid",
         Description = "Returns the current process identifier.",
         Example = "write(pid())",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Obj Pid() => Int.From(Environment.ProcessId);
 
@@ -126,7 +126,7 @@ public static class Os
         Name = "name",
         Description = "Returns the current operating-system name.",
         Example = "write(name())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Name()
     {
@@ -146,7 +146,7 @@ public static class Os
         Name = "arch",
         Description = "Returns the operating-system architecture.",
         Example = "write(arch())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Arch() => Str.From(System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString());
 
@@ -154,7 +154,7 @@ public static class Os
         Name = "version",
         Description = "Returns the operating-system version.",
         Example = "write(version())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Version() => Str.From(Environment.OSVersion.VersionString);
 
@@ -162,7 +162,7 @@ public static class Os
         Name = "cpuCount",
         Description = "Returns the available processor count.",
         Example = "write(cpuCount())",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Obj CpuCount() => Int.From(Environment.ProcessorCount);
 
@@ -170,7 +170,7 @@ public static class Os
         Name = "is64bit",
         Description = "Checks whether the operating system is 64-bit.",
         Example = "write(is64bit())",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Obj Is64Bit() => Bool.From(Environment.Is64BitOperatingSystem);
 
@@ -178,7 +178,7 @@ public static class Os
         Name = "hostname",
         Description = "Returns the current machine host name.",
         Example = "write(hostname())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Hostname() => Str.From(Environment.MachineName);
 
@@ -186,7 +186,7 @@ public static class Os
         Name = "username",
         Description = "Returns the current operating-system user name.",
         Example = "write(username())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Username() => Str.From(Environment.UserName);
 
@@ -202,7 +202,7 @@ public static class Os
         Name = "sep",
         Description = "Returns the directory separator character.",
         Example = "write(sep())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Str Sep() => Str.From(Path.DirectorySeparatorChar.ToString());
 
@@ -210,7 +210,7 @@ public static class Os
         Name = "pathsep",
         Description = "Returns the path-list separator character.",
         Example = "write(pathsep())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Str PathSep() => Str.From(Path.PathSeparator.ToString());
 
@@ -218,7 +218,7 @@ public static class Os
         Name = "linesep",
         Description = "Returns the environment line separator.",
         Example = "write(linesep())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Str LineSep() => Str.From(Environment.NewLine);
 
@@ -226,7 +226,7 @@ public static class Os
         Name = "tickCount",
         Description = "Returns elapsed system ticks in milliseconds.",
         Example = "write(tickCount())",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int TickCount() => Int.From(Environment.TickCount64);
 
@@ -235,7 +235,7 @@ public static class Os
         Description = "Stops the current process with an optional exit code.",
         Example = "exit(0)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Exit([ArgInfo(Optional = true)] Obj code = null!)
     {
@@ -258,13 +258,19 @@ public static class Os
         Name = "exec",
         Description = "Runs a shell command and returns its standard output.",
         Example = "output = exec(\"echo hello\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Exec([ArgInfo(Essential = true)] Obj command)
     {
         if (!GetString(command, out var cmd, out var err))
             return err;
+
+        if (string.IsNullOrWhiteSpace(cmd))
+            return new Err("command is empty");
+
+        if (cmd.Length > 8192)
+            return new Err("command too long");
 
         var isWindows = OperatingSystem.IsWindows();
 
@@ -286,7 +292,16 @@ public static class Os
                 return new Err("failed to start process");
 
             string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+            string error = process.StandardError.ReadToEnd();
+
+            if (!process.WaitForExit(10000))
+            {
+                try { process.Kill(true); } catch { }
+                return new Err("command timed out after 10s");
+            }
+
+            if (process.ExitCode != 0 && string.IsNullOrWhiteSpace(output))
+                return new Err(string.IsNullOrWhiteSpace(error) ? $"command failed with exit code {process.ExitCode}" : error.Trim());
 
             return Str.From(output);
         }

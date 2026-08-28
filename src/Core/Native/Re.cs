@@ -23,11 +23,27 @@ public static class Re
         return true;
     }
 
+    private static readonly Dictionary<string, Regex> cache = [];
+    private static readonly object cacheLock = new();
+
     static bool TryCompile(string pattern, out Regex regex, out Obj err)
     {
+        lock (cacheLock)
+        {
+            if (cache.TryGetValue(pattern, out regex!))
+            {
+                err = Obj.None;
+                return true;
+            }
+        }
+
         try
         {
-            regex = new Regex(pattern);
+            regex = new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(1));
+            lock (cacheLock)
+            {
+                cache[pattern] = regex;
+            }
             err = Obj.None;
             return true;
         }
@@ -37,14 +53,20 @@ public static class Re
             err = new Err($"invalid pattern: {e.Message}");
             return false;
         }
+        catch (RegexMatchTimeoutException)
+        {
+            regex = null!;
+            err = new Err("pattern match timed out");
+            return false;
+        }
     }
 
     [Native(
         Name = "test",
         Description = "Checks whether text matches a pattern.",
         Example = "write(test(\"\\d+\", text))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "string", "string" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Test(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -67,7 +89,7 @@ public static class Re
         Description = "Matches a pattern at the start of text.",
         Example = "write(match(\"^UN\", text))",
         ReturnType = "any",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Match(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -95,7 +117,7 @@ public static class Re
         Description = "Searches text for a pattern match.",
         Example = "write(search(\"UN\", text))",
         ReturnType = "any",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Search(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -120,7 +142,7 @@ public static class Re
         Description = "Finds every regular-expression match.",
         Example = "matches = find_all(\"\\d+\", text)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj FindAll(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -145,7 +167,7 @@ public static class Re
         Description = "Returns capture groups from a match.",
         Example = "write(groups(pattern, text))",
         ReturnType = "tuple",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Groups(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -180,8 +202,8 @@ public static class Re
         Name = "replace",
         Description = "Replaces the first pattern match.",
         Example = "result = replace(\"cat\", text, \"dog\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string", "string", "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str", "str", "str" }
     )]
     public static Obj Replace(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -207,8 +229,8 @@ public static class Re
         Name = "replace_all",
         Description = "Replaces every pattern match.",
         Example = "result = replace_all(\"\\s+\", text, \" \")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string", "string", "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str", "str", "str" }
     )]
     public static Obj ReplaceAll(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -235,7 +257,7 @@ public static class Re
         Description = "Splits text on a regular-expression pattern.",
         Example = "parts = split(\",\\s*\", text)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Split(
         [ArgInfo(Essential = true)] Obj pattern,
@@ -259,8 +281,8 @@ public static class Re
         Name = "escape",
         Description = "Escapes text for a regular expression.",
         Example = "write(escape(\"a+b\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Escape([ArgInfo(Essential = true)] Obj text)
     {

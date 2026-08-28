@@ -1,0 +1,9 @@
+use io
+use re
+use os
+io.write(re.test("\\d+", "abc123"))
+io.write(re.test("\\d+", "abc"))
+io.write(re.find_all("\\d+", "a1 b22 c333"))
+io.write(os.exec("echo hello"))
+io.write(os.exec(""))
+io.write("done")

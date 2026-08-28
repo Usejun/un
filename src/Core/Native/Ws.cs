@@ -27,7 +27,7 @@ public static class Ws
         Description = "Connects to a WebSocket endpoint.",
         Example = "socket = connect(\"wss://example.com\")",
         ReturnType = "web_socket",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Connect([ArgInfo(Essential = true)] Obj url)
     {

@@ -160,6 +160,7 @@ public static class Optimizer
 
         return node.WithChildren(children);
     }
+    
     private static Node OptimizeWhile(Node node)
     {
         var cond = node.Children[0];
@@ -189,18 +190,11 @@ public static class Optimizer
             (double x, double y) => EvalDouble(op, x, y),
             (long x, double y) => EvalDouble(op, x, y),
             (double x, long y) => EvalDouble(op, x, y),
-            (string x, string y) => EvalString(op, x, y),
+            (string x, string y) => x + y,
+            (string x, long y) => string.Join("", Enumerable.Repeat(x, (int)y)),
+            (long x, string y) => string.Join("", Enumerable.Repeat(y, (int)x)),
 
             _ => throw new Panic($"unsupported optimize types: {a.GetType().Name}, {b.GetType().Name}")
-        };
-    }
-
-    private static string EvalString(TokenType op, string a, string b)
-    {
-        return op switch
-        {
-            TokenType.Plus => a + b,
-            _ => throw new Panic($"unsupported optimize operator: {op}")
         };
     }
 
@@ -212,6 +206,7 @@ public static class Optimizer
             TokenType.Minus => a - b,
             TokenType.Asterisk => a * b,
             TokenType.Slash => a / b,
+            TokenType.DoubleSlash => a / b,
             TokenType.Percent => a % b,
 
             TokenType.Equal => a == b,
@@ -234,6 +229,7 @@ public static class Optimizer
             TokenType.Minus => a - b,
             TokenType.Asterisk => a * b,
             TokenType.Slash => a / b,
+            TokenType.DoubleSlash => (long)(a / b),
             TokenType.Percent => a % b,
 
             TokenType.Equal => a == b,

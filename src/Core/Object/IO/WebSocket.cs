@@ -54,7 +54,7 @@ public class WebSocket(ClientWebSocket value) : Ref<ClientWebSocket>(value, UnTy
         Name = "receive",
         Description = "Receives data from socket.",
         Example = "socket.receive()",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Receive([Self] WebSocket self)
     {
@@ -106,7 +106,7 @@ public class WebSocket(ClientWebSocket value) : Ref<ClientWebSocket>(value, UnTy
         Name = "is_open",
         Description = "Checks whether a web_socket value open.",
         Example = "socket.is_open()",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool IsOpen([Self] WebSocket self) => Bool.From(self.Value.State == WebSocketState.Open);
 }

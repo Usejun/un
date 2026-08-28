@@ -237,7 +237,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         Name = "remove",
         Description = "Removes a value from a list value.",
         Example = "items.remove(obj)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Bool Remove([Self] List self, [ArgInfo(Essential = true)] Obj obj)
@@ -278,7 +278,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         Name = "index_of",
         Description = "Finds a value index in items.",
         Example = "items.index_of(obj)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Int IndexOf([Self] List self, [ArgInfo(Essential = true)] Obj obj)
@@ -298,7 +298,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         Name = "contains",
         Description = "Checks whether items contains a value.",
         Example = "items.contains(obj)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Bool Contains([Self] List self, [ArgInfo(Essential = true)] Obj obj)
@@ -348,7 +348,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         Name = "binary_search",
         Description = "Returns the result of items.binary search().",
         Example = "items.binary_search(obj)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Int BinarySearch([Self] List self, [ArgInfo(Essential = true)] Obj obj)
@@ -358,7 +358,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         Name = "lower_bound",
         Description = "Returns the result of items.lower bound().",
         Example = "items.lower_bound(obj)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj LowerBound([Self] List self, [ArgInfo(Essential = true)] Obj obj)
@@ -369,7 +369,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
             m = (l + r) / 2;
             var lt = self[m].Lt(obj);
 
-            if (lt.As<Bool>(out var ltValue))
+            if (!lt.As<Bool>(out var ltValue))
                 return lt is Err ? lt : new Err($"lower_bound requires '<' to return bool");
 
             if (ltValue.Value) l = m + 1;
@@ -382,7 +382,7 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         Name = "upper_bound",
         Description = "Returns the result of items.upper bound().",
         Example = "items.upper_bound(obj)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj UpperBound([Self] List self, [ArgInfo(Essential = true)] Obj obj)
@@ -393,11 +393,11 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
             int m = (l + r) / 2;
             var gt = self[m].Gt(obj);
 
-            if (gt.As<Bool>(out var gtValue))
+            if (!gt.As<Bool>(out var gtValue))
                 return gt is Err ? gt : new Err($"upper_bound requires '>' to return bool");
 
-            if (gtValue.Value) l = m + 1;
-            else r = m;
+            if (gtValue.Value) r = m;
+            else l = m + 1;
         }
         return Int.From(r);
     }
@@ -418,8 +418,9 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         {
             int parent = (child - 1) / 2;
 
-            if (parent < child)
-                parent = child;
+            if (self[parent].CompareTo(self[child]) <= 0) break;
+
+            (self[parent], self[child]) = (self[child], self[parent]);
 
             child = parent;
         }
@@ -444,20 +445,20 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
 
         int parent = 0;
 
-        while (self.Count / 2 > parent)
+        while (true)
         {
-            int index = parent, left = 2 * parent + 1, right = 2 * parent + 2;
+            int smallest = parent; int left = 2 * parent + 1, right = 2 * parent + 2;
 
-            if (right < self.Count && index < right)
-                index = right;
-            if (left < self.Count && index < left)
-                index = left;
+            if (left < self.Count && self[left].CompareTo(self[smallest]) < 0) 
+                smallest = left;
+            if (right < self.Count && self[right].CompareTo(self[smallest]) < 0) 
+                smallest = right;
 
-            (parent, index) = (index, parent);
+            if (smallest == parent) break;
 
-            if (parent == index) break;
+            (self[parent], self[smallest]) = (self[smallest], self[parent]);
 
-            parent = index;
+            parent = smallest;
         }
 
         return value;

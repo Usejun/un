@@ -1,4 +1,11 @@
-use io {*}
-use iter {*}
+use io
 
-write(list(range(0, 2)))
+a = [
+[1, 2, 3],
+[2, 3, 4],
+[3, 4, 5],
+]
+
+b = "1!!" * true
+
+io.write(b)

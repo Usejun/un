@@ -50,7 +50,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "read",
         Description = "Reads all remaining text from a stream.",
         Example = "stream.read()",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Read([Self] Stream self)
     {
@@ -64,7 +64,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "read_line",
         Description = "Reads the next line from a stream.",
         Example = "line = stream.read_line()",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj ReadLine([Self] Stream self)
     {
@@ -141,7 +141,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Description = "Seeks to an absolute byte position in a stream.",
         Example = "stream.seek(0)",
         ReturnType = "none",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Seek(
         [Self] Stream self,
@@ -158,7 +158,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "position",
         Description = "Returns the current byte position in a stream.",
         Example = "write(stream.position())",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Obj Position([Self] Stream self)
     {
@@ -173,7 +173,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Description = "Sets the current byte position in a stream.",
         Example = "stream.set_position(0)",
         ReturnType = "none",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj SetPosition(
         [Self] Stream self,
@@ -190,7 +190,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "length",
         Description = "Returns the stream length in bytes.",
         Example = "write(stream.length())",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Obj Length([Self] Stream self)
     {
@@ -204,7 +204,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "eof",
         Description = "Checks whether a readable stream reached end of file.",
         Example = "write(stream.eof())",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Obj EndOfFile([Self] Stream self)
     {
@@ -218,7 +218,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "can_read",
         Description = "Checks whether a stream supports reading.",
         Example = "write(stream.can_read())",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool _CanRead([Self] Stream self) => Bool.From(self.Value.CanRead);
 
@@ -226,7 +226,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "can_write",
         Description = "Checks whether a stream supports writing.",
         Example = "write(stream.can_write())",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool _CanWrite([Self] Stream self) => Bool.From(self.Value.CanWrite);
 
@@ -234,7 +234,7 @@ public class Stream : Ref<System.IO.Stream>, IDisposable
         Name = "can_seek",
         Description = "Checks whether a stream supports seeking.",
         Example = "write(stream.can_seek())",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool CanSeek([Self] Stream self) => Bool.From(self.Value.CanSeek);
 }

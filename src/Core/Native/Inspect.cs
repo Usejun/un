@@ -37,7 +37,7 @@ public static class Inspect
         Description = "Reads an attribute with an optional default.",
         Example = "name = getattr(user, \"name\", \"guest\")",
         ReturnType = "list",
-        ArgumentTypes = new[] { "object", "string", "any" }
+        ArgumentTypes = new[] { "any", "str", "any" }
     )]
     public static Obj GetAttr(
         [ArgInfo(Essential = true)] Obj value,
@@ -55,8 +55,8 @@ public static class Inspect
         Name = "hasattr",
         Description = "Checks whether an object has an attribute.",
         Example = "write(hasattr(user, \"name\"))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "object", "string" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "object", "str" }
     )]
     public static Obj HasAttr(
         [ArgInfo(Essential = true)] Obj value,
@@ -72,7 +72,7 @@ public static class Inspect
         Description = "Sets an attribute on an object.",
         Example = "setattr(user, \"name\", \"Ada\")",
         ReturnType = "any",
-        ArgumentTypes = new[] { "object", "string", "any" }
+        ArgumentTypes = new[] { "object", "str", "any" }
     )]
     public static Obj SetAttr(
         [ArgInfo(Essential = true)] Obj value,
@@ -81,7 +81,7 @@ public static class Inspect
     {
         if (!name.ToStr().As<Str>(out var nameValue))
             return new Err("expected 'name' argument to be of type 'str'");
-        value.Members[nameValue.Value] = newValue;
+        value.SetAttr(nameValue.Value, newValue);
         return newValue;
     }
 
@@ -90,7 +90,7 @@ public static class Inspect
         Description = "Deletes an attribute from an object.",
         Example = "delattr(user, \"name\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "object", "string" }
+        ArgumentTypes = new[] { "object", "str" }
     )]
     public static Obj DelAttr(
         [ArgInfo(Essential = true)] Obj value,
@@ -108,7 +108,7 @@ public static class Inspect
         Description = "Reads metadata from an object.",
         Example = "write(meta(value, \"type\"))",
         ReturnType = "any",
-        ArgumentTypes = new[] { "object", "string" }
+        ArgumentTypes = new[] { "object", "str" }
     )]
     public static Obj Meta(
         [ArgInfo(Essential = true)] Obj value,

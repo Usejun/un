@@ -104,7 +104,7 @@ public class Obj(UnType type) : IComparable<Obj>
         return Bool.False;
     }
 
-    public virtual Obj Not() => ToBool().As<Bool>(out var value) ? Bool.From(value.Value) : new Err("operand must be a boolean");
+    public virtual Obj Not() => ToBool().As<Bool>(out var value) ? Bool.From(!value.Value) : new Err("operand must be a boolean");
 
     public virtual Obj Eq(Obj other)
     {
@@ -137,24 +137,24 @@ public class Obj(UnType type) : IComparable<Obj>
         return Bool.From(!ltValue.Value && !eqValue.Value);
     });
 
-    public virtual Obj LtOrEq(Obj other) => Binary("__ltoreq__", other, "other", s => s.Gt(other), () =>
+    public virtual Obj LtOrEq(Obj other) => Binary("__ltoreq__", other, "other", s => s.LtOrEq(other), () =>
     {
         if (!Lt(other).As<Bool>(out var ltValue))
-            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+            return new Err($"unsupported operand type(s) for <=: '{Type}' and '{other.Type}'");
         if (!Eq(other).As<Bool>(out var eqValue))
-            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+            return new Err($"unsupported operand type(s) for <=: '{Type}' and '{other.Type}'");
 
         return Bool.From(ltValue.Value || eqValue.Value);
     });
 
-    public virtual Obj GtOrEq(Obj other) => Binary("__gtoreq__", other, "other", s => s.Gt(other), () =>
+    public virtual Obj GtOrEq(Obj other) => Binary("__gtoreq__", other, "other", s => s.GtOrEq(other), () =>
     {
         if (!Lt(other).As<Bool>(out var ltValue))
-            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+            return new Err($"unsupported operand type(s) for >=: '{Type}' and '{other.Type}'");
         if (!Eq(other).As<Bool>(out var eqValue))
-            return new Err($"unsupported operand type(s) for >: '{Type}' and '{other.Type}'");
+            return new Err($"unsupported operand type(s) for >=: '{Type}' and '{other.Type}'");
 
-        return Bool.From(!ltValue.Value && eqValue.Value);
+        return Bool.From(!ltValue.Value);
     });
 
     public virtual Obj Slicer(Int to, Int from, Int step)
@@ -170,7 +170,7 @@ public class Obj(UnType type) : IComparable<Obj>
 
         do
         {
-            list.Append(GetItem(Int.From(a)));
+            List.Append(list, Int.From(a));
             a += step.Value;
         } while (a < b);
 
@@ -183,8 +183,10 @@ public class Obj(UnType type) : IComparable<Obj>
             return value;
         if (ValidSuper())
             Super.SetAttr(name, value);
+        if (Members.ContainsKey(name))
+            return Members[name] = value;
 
-        return Members[name] = value;
+        return new Err($"'{Type}' object has no attribute '{name}'");
     }
 
     public virtual Obj GetAttr(string name)
@@ -211,7 +213,6 @@ public class Obj(UnType type) : IComparable<Obj>
         value.Super = Super!;
         return value;
     }
-
 
     public virtual Obj SetItem(Obj key, Obj value)
     {
@@ -268,7 +269,7 @@ public class Obj(UnType type) : IComparable<Obj>
             Members = Members.New(),
             Annotations = Annotations,
             Self = Self,
-            Super = Super.Clone() ?? None,
+            Super = Super is null ? None : !Super.IsNone() ? Super.Clone() : Super,
         };
     }
 

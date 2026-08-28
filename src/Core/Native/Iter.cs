@@ -54,7 +54,7 @@ public static class Iter
         Description = "Creates an iterator from a value.",
         Example = "items = iter(values)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "iterable", "integer" }
+        ArgumentTypes = new[] { "iterable", "int" }
     )]
     public static Obj Array(
         [ArgInfo(Essential = true)] Obj value,
@@ -95,7 +95,7 @@ public static class Iter
         Description = "Creates a sequence of integers.",
         Example = "for index in range(0, 3)\n    write(index)",
         ReturnType = "iter",
-        ArgumentTypes = new[] { "integer", "integer", "integer" }
+        ArgumentTypes = new[] { "int", "int", "int" }
     )]
     public static Obj Range(
         [ArgInfo(Essential = true)] Obj start,
@@ -126,7 +126,7 @@ public static class Iter
         Description = "Creates an unbounded integer counter.",
         Example = "numbers = counter(0)",
         ReturnType = "counter",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Counter([ArgInfo(Optional = true)] Obj start = null!)
     {
@@ -142,7 +142,7 @@ public static class Iter
         Description = "Iterates over values in reverse order.",
         Example = "items = reverse(values)",
         ReturnType = "reverse",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Reverse([ArgInfo(Essential = true)] Obj obj)
     {
@@ -156,7 +156,7 @@ public static class Iter
         Description = "Repeats an iterable a fixed number of times.",
         Example = "items = repeat(values, 3)",
         ReturnType = "repeat",
-        ArgumentTypes = new[] { "iterable", "integer" }
+        ArgumentTypes = new[] { "iter", "int" }
     )]
     public static Obj Repeat(
         [ArgInfo(Essential = true)] Obj obj,
@@ -178,7 +178,7 @@ public static class Iter
         Description = "Combines corresponding values from iterables.",
         Example = "pairs = zip(first, second)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Zip([ArgInfo(Positional = true)] Obj iterables)
     {
@@ -217,7 +217,7 @@ public static class Iter
         Description = "Pairs iterable values with their indexes.",
         Example = "for pair in enumerate(items)\n    write(pair)",
         ReturnType = "iter",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Enumerate([ArgInfo(Essential = true)] Obj iterable)
     {
@@ -232,7 +232,7 @@ public static class Iter
         Description = "Adds all values in an iterable.",
         Example = "write(sum(values))",
         ReturnType = "any",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Sum([ArgInfo(Positional = true)] Obj iterable)
     {
@@ -259,7 +259,7 @@ public static class Iter
         Description = "Returns the greatest value in an iterable.",
         Example = "write(max(values))",
         ReturnType = "any",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Max([ArgInfo(Positional = true)] Obj iterable)
     {
@@ -287,7 +287,7 @@ public static class Iter
         Description = "Returns the smallest value in an iterable.",
         Example = "write(min(values))",
         ReturnType = "any",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Min([ArgInfo(Positional = true)] Obj iterable)
     {
@@ -315,7 +315,7 @@ public static class Iter
         Description = "Keeps iterable values for which a predicate returns true.",
         Example = "positives = filter(is_positive, values)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "function", "iterable" }
+        ArgumentTypes = new[] { "func", "iter" }
     )]
     public static Obj Filter(
         [ArgInfo(Essential = true)] Obj predicate,
@@ -348,7 +348,7 @@ public static class Iter
         Description = "Transforms every value in an iterable.",
         Example = "doubled = map(double, values)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "function", "iterable" }
+        ArgumentTypes = new[] { "func", "iter" }
     )]
     public static Obj Map(
         [ArgInfo(Essential = true)] Obj transform,
@@ -377,7 +377,7 @@ public static class Iter
         Description = "Takes a number of values from an iterable.",
         Example = "first = take(3, values)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "integer", "iterable" }
+        ArgumentTypes = new[] { "int", "iter" }
     )]
     public static Obj Take(
         [ArgInfo(Essential = true)] Obj count,
@@ -412,7 +412,7 @@ public static class Iter
         Description = "Skips a number of values in an iterable.",
         Example = "rest = skip(2, values)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "integer", "iterable" }
+        ArgumentTypes = new[] { "int", "iter" }
     )]
     public static Obj Skip(
         [ArgInfo(Essential = true)] Obj count,
@@ -445,7 +445,7 @@ public static class Iter
         Description = "Concatenates multiple iterables into one sequence.",
         Example = "items = chain(first, second)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Chain([ArgInfo(Positional = true)] Obj iterables)
     {
@@ -471,7 +471,7 @@ public static class Iter
         Description = "Flattens nested iterable values.",
         Example = "flat = flatten(groups)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Flatten([ArgInfo(Essential = true)] Obj iterable)
     {
@@ -500,8 +500,8 @@ public static class Iter
         Name = "all",
         Description = "Checks whether every iterable item matches a predicate.",
         Example = "all(is_valid, values)",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "function", "iterable" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "func", "iter" }
     )]
     public static Obj All(
         [ArgInfo(Essential = true)] Obj predicate,
@@ -531,8 +531,8 @@ public static class Iter
         Name = "any",
         Description = "Checks whether at least one iterable item matches a predicate.",
         Example = "any(is_ready, tasks)",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "function", "iterable" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "func", "iter" }
     )]
     public static Obj Any(
         [ArgInfo(Essential = true)] Obj predicate,
@@ -562,8 +562,8 @@ public static class Iter
         Name = "count",
         Description = "Counts iterable items that match a predicate.",
         Example = "write(count(is_even, values))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "function", "iterable" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "func", "iter" }
     )]
     public static Obj Count(
         [ArgInfo(Essential = true)] Obj predicate,
@@ -596,7 +596,7 @@ public static class Iter
         Description = "Returns iterable values in sorted order.",
         Example = "ordered = sorted(values)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "iterable" }
+        ArgumentTypes = new[] { "iter" }
     )]
     public static Obj Sorted([ArgInfo(Essential = true)] Obj iterable)
     {

@@ -16,7 +16,7 @@ public static class IO
         Description = "Writes values to standard output.",
         Example = "write(\"Hello\", \"UN\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "tuple", "string", "string", "stream" }
+        ArgumentTypes = new[] { "tuple", "str", "str", "stream" }
     )]
     public static Obj Write(
         [ArgInfo(Positional = true)] Obj values,
@@ -69,8 +69,8 @@ public static class IO
         Name = "read",
         Description = "Reads one line from an input stream.",
         Example = "name = read(\"Name: \")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string", "stream", "stream" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str", "stream", "stream" }
     )]
     public static Obj Read(
         [ArgInfo(Optional = true)] Obj prompt = null!,
@@ -112,7 +112,7 @@ public static class IO
         Description = "Opens a sandbox-relative file stream.",
         Example = "stream = open(\"notes.txt\", \"r\")",
         ReturnType = "stream",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Open(
         [ArgInfo(Essential = true)] Obj path,
@@ -129,10 +129,11 @@ public static class IO
         var modeType = modeValue.Value;
         var fullPath = Path.Combine(Global.PATH, pathValue.Value);
 
-        if (!File.Exists(fullPath))
-            return new Err("file not found");
         if (modeType != "r" && modeType != "w" && modeType != "a" && modeType != "rw")
             return new Err("invalid 'mode' argument, expected one of 'r', 'w', 'a', or 'rw'");
+
+        if (modeType == "r" && !File.Exists(fullPath))
+            return new Err("file not found");
 
         return modeType switch
         {

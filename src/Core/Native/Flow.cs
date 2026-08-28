@@ -13,7 +13,7 @@ public static class Flow
         Description = "Creates a worker pool with an optional worker count.",
         Example = "workers = spawn(4)",
         ReturnType = "pool",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Spawn([ArgInfo(Optional = true)] Obj workerCount = null!)
     {

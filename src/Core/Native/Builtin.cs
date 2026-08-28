@@ -1,5 +1,6 @@
 ﻿using Un.Object;
 using Un.Object.Primitive;
+using Un.Object.Type;
 using Un.Reflection;
 
 namespace Un.Native;
@@ -11,7 +12,7 @@ public static class Builtin
         Name = "len",
         Description = "Returns the number of items in a collection.",
         Example = "write(len(items))",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "collection" }
     )]
     public static Obj Len([ArgInfo(Essential = true)] Obj value) => value.Len();
@@ -21,7 +22,7 @@ public static class Builtin
         Description = "Stops the current UN program with an exit code.",
         Example = "exit(0)",
         ReturnType = "none",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Exit([ArgInfo(Optional = true)] Obj code)
     {
@@ -42,7 +43,7 @@ public static class Builtin
         Name = "hash",
         Description = "Returns a hash value for an object.",
         Example = "write(hash(value))",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj Hash([ArgInfo(Essential = true)] Obj value) => value.Hash();
@@ -52,7 +53,7 @@ public static class Builtin
         Description = "Raises a named runtime error.",
         Example = "panic(\"invalid state\")",
         ReturnType = "error",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Panic(
         [ArgInfo(Essential = true)] Obj message,

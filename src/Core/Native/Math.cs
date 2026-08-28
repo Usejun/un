@@ -51,8 +51,8 @@ public static class Math
         Name = "round",
         Description = "Rounds a number to a number of digits.",
         Example = "write(round(3.14159, 2))",
-        ReturnType = "number",
-        ArgumentTypes = new[] { "number", "integer" }
+        ReturnType = "int | float",
+        ArgumentTypes = new[] { "int | float", "int" }
     )]
     public static Obj Round(
         [ArgInfo(Essential = true)] Obj value,
@@ -80,8 +80,8 @@ public static class Math
         Name = "abs",
         Description = "Returns the absolute value of a number.",
         Example = "write(abs(-5))",
-        ReturnType = "number",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "int | float",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Abs([ArgInfo(Essential = true)] Obj value)
     {
@@ -95,8 +95,8 @@ public static class Math
         Name = "ceil",
         Description = "Rounds a number upward.",
         Example = "write(ceil(2.1))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Ceil([ArgInfo(Essential = true)] Obj value)
     {
@@ -110,8 +110,8 @@ public static class Math
         Name = "floor",
         Description = "Rounds a number downward.",
         Example = "write(floor(2.9))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Floor([ArgInfo(Essential = true)] Obj value)
     {
@@ -125,8 +125,8 @@ public static class Math
         Name = "trunc",
         Description = "Removes the fractional part of a number.",
         Example = "write(trunc(2.9))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Trunc([ArgInfo(Essential = true)] Obj value)
     {
@@ -140,8 +140,8 @@ public static class Math
         Name = "sign",
         Description = "Returns the sign of a number.",
         Example = "write(sign(-3))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Sign([ArgInfo(Essential = true)] Obj value)
     {
@@ -156,7 +156,7 @@ public static class Math
         Description = "Returns the square root of a number.",
         Example = "write(sqrt(9))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Sqrt([ArgInfo(Essential = true)] Obj value)
     {
@@ -174,7 +174,7 @@ public static class Math
         Description = "Returns the cube root of a number.",
         Example = "write(cbrt(27))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Cbrt([ArgInfo(Essential = true)] Obj value)
     {
@@ -189,7 +189,7 @@ public static class Math
         Description = "Raises a number to an exponent.",
         Example = "write(pow(2, 8))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number", "number" }
+        ArgumentTypes = new[] { "int | float", "int | float" }
     )]
     public static Obj Pow(
         [ArgInfo(Essential = true)] Obj value,
@@ -213,7 +213,7 @@ public static class Math
         Description = "Returns e raised to a power.",
         Example = "write(exp(2))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Exp([ArgInfo(Essential = true)] Obj value)
     {
@@ -228,7 +228,7 @@ public static class Math
         Description = "Returns a logarithm with an optional base.",
         Example = "write(log(8, 2))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number", "number" }
+        ArgumentTypes = new[] { "int | float", "int | float" }
     )]
     public static Obj Log(
         [ArgInfo(Essential = true)] Obj value,
@@ -254,7 +254,7 @@ public static class Math
         Description = "Returns the base-2 logarithm.",
         Example = "write(log2(8))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Log2([ArgInfo(Essential = true)] Obj value)
     {
@@ -272,7 +272,7 @@ public static class Math
         Description = "Returns the base-10 logarithm.",
         Example = "write(log10(100))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Log10([ArgInfo(Essential = true)] Obj value)
     {
@@ -290,7 +290,7 @@ public static class Math
         Description = "Returns the sine of an angle.",
         Example = "write(sin(0))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Sin([ArgInfo(Essential = true)] Obj value)
     {
@@ -305,7 +305,7 @@ public static class Math
         Description = "Returns the cosine of an angle.",
         Example = "write(cos(0))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Cos([ArgInfo(Essential = true)] Obj value)
     {
@@ -320,7 +320,7 @@ public static class Math
         Description = "Returns the tangent of an angle.",
         Example = "write(tan(0))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Tan([ArgInfo(Essential = true)] Obj value)
     {
@@ -335,7 +335,7 @@ public static class Math
         Description = "Returns the arcsine of a number.",
         Example = "write(asin(0))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Asin([ArgInfo(Essential = true)] Obj value)
     {
@@ -350,7 +350,7 @@ public static class Math
         Description = "Returns the arccosine of a number.",
         Example = "write(acos(0))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Acos([ArgInfo(Essential = true)] Obj value)
     {
@@ -365,7 +365,7 @@ public static class Math
         Description = "Returns the arctangent of a number.",
         Example = "write(atan(1))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Atan([ArgInfo(Essential = true)] Obj value)
     {
@@ -380,7 +380,7 @@ public static class Math
         Description = "Returns the angle for y and x coordinates.",
         Example = "write(atan2(y, x))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number", "number" }
+        ArgumentTypes = new[] { "int | float", "int | float" }
     )]
     public static Obj Atan2(
         [ArgInfo(Essential = true)] Obj y,
@@ -400,7 +400,7 @@ public static class Math
         Description = "Returns the hypotenuse for two coordinates.",
         Example = "write(hypot(3, 4))",
         ReturnType = "float",
-        ArgumentTypes = new[] { "number", "number" }
+        ArgumentTypes = new[] { "int | float", "int | float" }
     )]
     public static Obj Hypot(
         [ArgInfo(Essential = true)] Obj x,
@@ -419,8 +419,8 @@ public static class Math
         Name = "clamp",
         Description = "Limits a number to a minimum and maximum.",
         Example = "write(clamp(score, 0, 100))",
-        ReturnType = "number",
-        ArgumentTypes = new[] { "number", "number", "number" }
+        ReturnType = "int | float",
+        ArgumentTypes = new[] { "int | float", "int | float", "int | float" }
     )]
     public static Obj Clamp(
         [ArgInfo(Essential = true)] Obj value,
@@ -446,8 +446,8 @@ public static class Math
         Name = "gcd",
         Description = "Returns the greatest common divisor.",
         Example = "write(gcd(12, 18))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "integer", "integer" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "int", "int" }
     )]
     public static Obj Gcd(
         [ArgInfo(Essential = true)] Obj a,
@@ -472,8 +472,8 @@ public static class Math
         Name = "lcm",
         Description = "Returns the least common multiple.",
         Example = "write(lcm(4, 6))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "integer", "integer" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "int", "int" }
     )]
     public static Obj Lcm(
         [ArgInfo(Essential = true)] Obj a,
@@ -503,8 +503,8 @@ public static class Math
         Name = "is_nan",
         Description = "Checks whether a number is not-a-number.",
         Example = "write(is_nan(value))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj IsNan([ArgInfo(Essential = true)] Obj value)
     {
@@ -518,8 +518,8 @@ public static class Math
         Name = "is_infinite",
         Description = "Checks whether a number is infinite.",
         Example = "write(is_infinite(value))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj IsInfinite([ArgInfo(Essential = true)] Obj value)
     {
@@ -533,8 +533,8 @@ public static class Math
         Name = "is_finite",
         Description = "Checks whether a number is finite.",
         Example = "write(is_finite(value))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "number" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj IsFinite([ArgInfo(Essential = true)] Obj value)
     {

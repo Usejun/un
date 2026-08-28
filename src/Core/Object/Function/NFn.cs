@@ -10,19 +10,30 @@ public class NFn(Context context) : Fn(context)
 
     public override Obj Call(Tup args)
     {
-        if (Closure.CallDepth++ > (int)Global.MAXRECURSIONDEPTH)
+        if (Closure.CallDepth++ >= (int)Global.MAXRECURSIONDEPTH)
+        {
+            Closure.CallDepth--;
             return new Err("maximum recursion depth exceeded");
+        }
 
         var scope = new Scope(Closure.Scope ?? Scope.Empty);
         var error = Bind(scope, args);
 
         if (!error.IsNone())
+        {
+            Closure.CallDepth--;
             return error;
+        }
 
-        var value = Func(scope);
-
-        Closure.CallDepth--;
-        return value ?? None;
+        try
+        {
+            var value = Func(scope);
+            return value ?? None;
+        }
+        finally
+        {
+            Closure.CallDepth--;
+        }
     }
     
     public override NFn Clone() => new(Closure)

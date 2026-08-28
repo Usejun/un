@@ -13,7 +13,7 @@ public static class Time
         Description = "Waits for a number of milliseconds.",
         Example = "sleep(250)",
         ReturnType = "none",
-        ArgumentTypes = new[] { "number" }
+        ArgumentTypes = new[] { "int | float" }
     )]
     public static Obj Sleep(Obj milliseconds)
     {

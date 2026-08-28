@@ -78,7 +78,7 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         Name = "count",
         Description = "Returns the result of iterator.count().",
         Example = "iterator.count()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Obj Count([Self] Iters self) => Int.From(self.Value.Count());
 
@@ -140,7 +140,7 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         Name = "any",
         Description = "Returns the result of iterator.any().",
         Example = "iterator.any(fn)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj Any([Self] Iters self, [ArgInfo(Essential = true)] Obj fn)
@@ -161,7 +161,7 @@ public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType
         Name = "all",
         Description = "Returns the result of iterator.all().",
         Example = "iterator.all(fn)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj All([Self] Iters self, [ArgInfo(Essential = true)] Obj fn)

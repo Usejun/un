@@ -53,7 +53,7 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Name = "get",
         Description = "Gets a value from client.",
         Example = "client.get(url)",
-        ReturnType = "string",
+        ReturnType = "str",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj Get([Self] HttpClient self, [ArgInfo(Essential = true)] Obj url)
@@ -76,8 +76,8 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Async = true,
         Description = "Asynchronously sends a GET request and returns its response text.",
         Example = "body = client.get_async(\"https://example.com\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static async Task<Obj> GetAsync([Self] HttpClient self, [ArgInfo(Essential = true)] Obj url)
     {
@@ -98,7 +98,7 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Name = "delete",
         Description = "Deletes a value from client.",
         Example = "client.delete(url)",
-        ReturnType = "string",
+        ReturnType = "str",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj Delete([Self] HttpClient self, [ArgInfo(Essential = true)] Obj url)
@@ -130,8 +130,8 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Async = true,
         Description = "Asynchronously sends a DELETE request and returns its response text.",
         Example = "body = client.delete_async(\"https://example.com/item\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static async Task<Obj> DeleteAsync([Self] HttpClient self, [ArgInfo(Essential = true)] Obj url)
     {
@@ -153,7 +153,7 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Name = "post",
         Description = "Returns the result of client.post().",
         Example = "client.post(url, body)",
-        ReturnType = "string",
+        ReturnType = "str",
         ArgumentTypes = new[] { "any", "any" }
     )]
     public static Obj Post(
@@ -186,8 +186,8 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Async = true,
         Description = "Asynchronously sends a POST request with text content.",
         Example = "body = client.post_async(\"https://example.com\", \"data\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string", "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static async Task<Obj> PostAsync(
         [Self] HttpClient self,
@@ -218,7 +218,7 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Name = "put",
         Description = "Returns the result of client.put().",
         Example = "client.put(url, body)",
-        ReturnType = "string",
+        ReturnType = "str",
         ArgumentTypes = new[] { "any", "any" }
     )]
     public static Obj Put(
@@ -251,8 +251,8 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Async = true,
         Description = "Asynchronously sends a PUT request with text content.",
         Example = "body = client.put_async(\"https://example.com\", \"data\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string", "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static async Task<Obj> PutAsync(
         [Self] HttpClient self,
@@ -283,7 +283,7 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Name = "patch",
         Description = "Returns the result of client.patch().",
         Example = "client.patch(url, body)",
-        ReturnType = "string",
+        ReturnType = "str",
         ArgumentTypes = new[] { "any", "any" }
     )]
     public static Obj Patch(
@@ -328,8 +328,8 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Async = true,
         Description = "Asynchronously sends a PATCH request with text content.",
         Example = "body = client.patch_async(\"https://example.com\", \"data\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string", "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static async Task<Obj> PatchAsync(
         [Self] HttpClient self,
@@ -365,7 +365,7 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Name = "head",
         Description = "Returns the result of client.head().",
         Example = "client.head(url)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj Head([Self] HttpClient self, [ArgInfo(Essential = true)] Obj url)
@@ -391,8 +391,8 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Async = true,
         Description = "Asynchronously sends a HEAD request and returns its status code.",
         Example = "status = client.head_async(\"https://example.com\")",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "str" }
     )]
     public static async Task<Obj> HeadAsync([Self] HttpClient self, [ArgInfo(Essential = true)] Obj url)
     {
@@ -452,7 +452,7 @@ public class HttpClient(System.Net.Http.HttpClient value) : Ref<System.Net.Http.
         Description = "Asynchronously lists HTTP methods allowed by an endpoint.",
         Example = "methods = client.options_async(\"https://example.com\")",
         ReturnType = "list",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static async Task<Obj> OptionsAsync([Self] HttpClient self, [ArgInfo(Essential = true)] Obj url)
     {

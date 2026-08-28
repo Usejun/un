@@ -14,7 +14,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
     private Token Current => position < tokens.Count ? tokens[position] : tokens[^1];
 
-    private bool IsEndOfStatement => Current.Type is TokenType.NewLine or TokenType.EOF;
+    private bool IsEndOfStatement => Current.Type is TokenType.NewLine or TokenType.Dedent or TokenType.EOF;
 
     private Token Previous() => tokens[position - 1];
 
@@ -1164,8 +1164,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         if (statements.Count == 0)
             return new Node(Current.Start, 0, NodeKind.Block);
 
-        return new Node(statements[0].Start, GetLength(statements[0], statements[^1]), NodeKind.Block, children: [.. statements]
-        );
+        return new Node(statements[0].Start, GetLength(statements[0], statements[^1]), NodeKind.Block, children: [.. statements]);
     }
 
     private Node ParsePattern()

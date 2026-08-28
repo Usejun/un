@@ -88,7 +88,7 @@ public class Pool : Obj
         if (!fn.As<Fn>(out _))
             return new Err("expected 'fn' argument to be of type 'func'");
 
-        if (vargs.As<Tup>(out var vargsTup))
+        if (!vargs.As<Tup>(out var vargsTup))
             return new Err("expected 'iterable' argument to be of type 'iterable'");
 
         var len = vargsTup.Count;

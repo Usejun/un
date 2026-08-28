@@ -43,7 +43,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "year",
         Description = "Returns the result of date.year().",
         Example = "date.year()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Year([Self] Date self) => Int.From(self.Value.Year);
 
@@ -51,7 +51,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "month",
         Description = "Returns the result of date.month().",
         Example = "date.month()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Month([Self] Date self) => Int.From(self.Value.Month);
 
@@ -59,7 +59,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "day",
         Description = "Returns the result of date.day().",
         Example = "date.day()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Day([Self] Date self) => Int.From(self.Value.Day);
 
@@ -67,7 +67,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "hour",
         Description = "Returns the result of date.hour().",
         Example = "date.hour()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Hour([Self] Date self) => Int.From(self.Value.Hour);
 
@@ -75,7 +75,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "minute",
         Description = "Returns the result of date.minute().",
         Example = "date.minute()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Minute([Self] Date self) => Int.From(self.Value.Minute);
 
@@ -83,7 +83,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "second",
         Description = "Returns the result of date.second().",
         Example = "date.second()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Second([Self] Date self) => Int.From(self.Value.Second);
 
@@ -91,7 +91,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "ms",
         Description = "Returns the result of date.ms().",
         Example = "date.ms()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Ms([Self] Date self) => Int.From(self.Value.Millisecond);
 
@@ -99,7 +99,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "timestamp",
         Description = "Returns the result of date.timestamp().",
         Example = "date.timestamp()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Timestamp([Self] Date self)
         => Int.From(new DateTimeOffset(self.Value).ToUnixTimeSeconds());
@@ -108,7 +108,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "timestamp_ms",
         Description = "Returns the result of date.timestamp ms().",
         Example = "date.timestamp_ms()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int TimestampMs([Self] Date self)
         => Int.From(new DateTimeOffset(self.Value).ToUnixTimeMilliseconds());
@@ -117,8 +117,8 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "format",
         Description = "Returns the result of date.format().",
         Example = "date.format(format)",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Str Format([Self] Date self, [ArgInfo(Essential = true)] Str format)
         => Str.From(self.Value.ToString(format.Value));
@@ -128,7 +128,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Description = "Adds years to a date value.",
         Example = "date.add_years(years)",
         ReturnType = "date",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Date AddYears([Self] Date self, [ArgInfo(Essential = true)] Int years)
         => new(self.Value.AddYears((int)years.Value));
@@ -138,7 +138,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Description = "Adds months to a date value.",
         Example = "date.add_months(months)",
         ReturnType = "date",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Date AddMonths([Self] Date self, [ArgInfo(Essential = true)] Int months)
         => new(self.Value.AddMonths((int)months.Value));
@@ -148,7 +148,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Description = "Adds days to a date value.",
         Example = "date.add_days(days)",
         ReturnType = "date",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Date AddDays([Self] Date self, [ArgInfo(Essential = true)] Int days)
         => new(self.Value.AddDays(days.Value));
@@ -158,7 +158,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Description = "Adds hours to a date value.",
         Example = "date.add_hours(hours)",
         ReturnType = "date",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Date AddHours([Self] Date self, [ArgInfo(Essential = true)] Int hours)
         => new(self.Value.AddHours(hours.Value));
@@ -168,7 +168,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Description = "Adds minutes to a date value.",
         Example = "date.add_minutes(minutes)",
         ReturnType = "date",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Date AddMinutes([Self] Date self, [ArgInfo(Essential = true)] Int minutes)
         => new(self.Value.AddMinutes(minutes.Value));
@@ -178,7 +178,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Description = "Adds seconds to a date value.",
         Example = "date.add_seconds(seconds)",
         ReturnType = "date",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Date AddSeconds([Self] Date self, [ArgInfo(Essential = true)] Int seconds)
         => new(self.Value.AddSeconds(seconds.Value));
@@ -188,7 +188,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Description = "Adds ms to a date value.",
         Example = "date.add_ms(milliseconds)",
         ReturnType = "date",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Date AddMilliseconds([Self] Date self, [ArgInfo(Essential = true)] Int milliseconds)
         => new(self.Value.AddMilliseconds(milliseconds.Value));
@@ -197,7 +197,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "weekday",
         Description = "Returns the result of date.weekday().",
         Example = "date.weekday()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Weekday([Self] Date self) => Int.From((int)self.Value.DayOfWeek);
 
@@ -205,7 +205,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "day_of_year",
         Description = "Returns the result of date.day of year().",
         Example = "date.day_of_year()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int DayOfYear([Self] Date self) => Int.From(self.Value.DayOfYear);
 
@@ -213,7 +213,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "days_in_month",
         Description = "Returns the result of date.days in month().",
         Example = "date.days_in_month()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int DaysInMonth([Self] Date self) => Int.From(DateTime.DaysInMonth(self.Value.Year, self.Value.Month));
 
@@ -221,7 +221,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "is_leap_year",
         Description = "Checks whether a date value leap year.",
         Example = "date.is_leap_year()",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool IsLeapYear([Self] Date self) => Bool.From(DateTime.IsLeapYear(self.Value.Year));
 
@@ -237,7 +237,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "before",
         Description = "Returns the result of date.before().",
         Example = "date.before(other)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "date" }
     )]
     public static Bool Before([Self] Date self, [ArgInfo(Essential = true)] Date other) => Bool.From(self.Value < other.Value);
@@ -246,7 +246,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "after",
         Description = "Returns the result of date.after().",
         Example = "date.after(other)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "date" }
     )]
     public static Bool After([Self] Date self, [ArgInfo(Essential = true)] Date other)
@@ -256,7 +256,7 @@ public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
         Name = "compare",
         Description = "Returns the result of date.compare().",
         Example = "date.compare(other)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "date" }
     )]
     public static Int Compare([Self] Date self, [ArgInfo(Essential = true)] Date other)

@@ -16,7 +16,7 @@ public class Random : Ref<System.Random>
         Name = "next",
         Description = "Returns a non-negative pseudo-random integer.",
         Example = "write(generator.next())",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Next([Self] Random self) => Primitive.Int.From(self.Value.Next());
 
@@ -24,8 +24,8 @@ public class Random : Ref<System.Random>
         Name = "int",
         Description = "Returns a random integer in an inclusive range.",
         Example = "value = generator.int(1, 6)",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "integer", "integer" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "int", "int" }
     )]
     public static Obj Int(
         [Self] Random self,
@@ -74,7 +74,7 @@ public class Random : Ref<System.Random>
         Name = "bool",
         Description = "Returns a pseudo-random boolean value.",
         Example = "write(generator.bool())",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool Bool([Self] Random self) => Primitive.Bool.From(self.Value.Next(2) == 0);
 
@@ -83,7 +83,7 @@ public class Random : Ref<System.Random>
         Description = "Returns a list of pseudo-random byte values.",
         Example = "values = generator.bytes(16)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Bytes(
         [Self] Random self,
@@ -139,7 +139,7 @@ public class Random : Ref<System.Random>
         Description = "Returns multiple random values from a list with replacement.",
         Example = "items = generator.choices(values, 3)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "list", "integer" }
+        ArgumentTypes = new[] { "list", "int" }
     )]
     public static Obj Choices(
         [Self] Random self,
@@ -164,7 +164,7 @@ public class Random : Ref<System.Random>
         Description = "Returns unique random values from a list.",
         Example = "items = generator.sample(values, 3)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "list", "integer" }
+        ArgumentTypes = new[] { "list", "int" }
     )]
     public static Obj Sample(
         [Self] Random self,
@@ -188,7 +188,7 @@ public class Random : Ref<System.Random>
         Name = "chance",
         Description = "Returns true according to a probability from zero to one.",
         Example = "generator.chance(0.25)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "float" }
     )]
     public static Obj Chance(
@@ -208,7 +208,7 @@ public class Random : Ref<System.Random>
         Description = "Sets this generator's pseudo-random seed.",
         Example = "generator.seed(42)",
         ReturnType = "none",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Seed(
         [Self] Random self,
@@ -225,7 +225,7 @@ public class Random : Ref<System.Random>
         Name = "uuid",
         Description = "Returns a new UUID string.",
         Example = "id = generator.uuid()",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj UUID([Self] Random self)
     {
@@ -239,11 +239,11 @@ public class Random : Ref<System.Random>
     }
 
     [Native(
-        Name = "string",
+        Name = "str",
         Description = "Returns an alphanumeric pseudo-random string.",
         Example = "token = generator.string(12)",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "integer" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj String(
         [Self] Random self,
@@ -315,7 +315,7 @@ public class Random : Ref<System.Random>
         Description = "Returns a shuffled list of integers in a range.",
         Example = "values = generator.range(1, 10)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "integer", "integer" }
+        ArgumentTypes = new[] { "int", "int" }
     )]
     public static Obj Range(
         [Self] Random self,

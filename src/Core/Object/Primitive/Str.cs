@@ -157,7 +157,7 @@ public class Str : Ref<string>
         Name = "is_empty",
         Description = "Checks whether a str value empty.",
         Example = "text.is_empty()",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Obj IsEmpty([Self] Str self) => Bool.From(string.IsNullOrEmpty(self.Value));
 
@@ -165,7 +165,7 @@ public class Str : Ref<string>
         Name = "is_number",
         Description = "Checks whether a str value number.",
         Example = "text.is_number()",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Obj IsNumber([Self] Str self) => Bool.From(self.Value.All(char.IsDigit));
 
@@ -173,7 +173,7 @@ public class Str : Ref<string>
         Name = "is_alphabet",
         Description = "Checks whether a str value alphabet.",
         Example = "text.is_alphabet()",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Obj IsAlphabet([Self] Str self) => Bool.From(self.Value.All(char.IsLetter));
 
@@ -181,12 +181,12 @@ public class Str : Ref<string>
         Name = "index_of",
         Description = "Finds a value index in text.",
         Example = "text.index_of(value)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj IndexOf([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
-        if (value.As<Str>(out var str))
+        if (!value.As<Str>(out var str))
             return new Err("invalid argument: value");
 
         return Int.From(self.Value.IndexOf(str.Value));
@@ -196,12 +196,12 @@ public class Str : Ref<string>
         Name = "contains",
         Description = "Checks whether text contains a value.",
         Example = "text.contains(value)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj Contains([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
-        if (value.As<Str>(out var str))
+        if (!value.As<Str>(out var str))
             return new Err("invalid argument: value");
 
         return Bool.From(self.Value.Contains(str.Value));
@@ -211,12 +211,12 @@ public class Str : Ref<string>
         Name = "starts_with",
         Description = "Returns the result of text.starts with().",
         Example = "text.starts_with(value)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj StartsWith([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
-        if (value.As<Str>(out var str))
+        if (!value.As<Str>(out var str))
             return new Err("invalid argument: value");
 
         return Bool.From(self.Value.StartsWith(str.Value));
@@ -226,12 +226,12 @@ public class Str : Ref<string>
         Name = "ends_with",
         Description = "Returns the result of text.ends with().",
         Example = "text.ends_with(value)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj EndsWith([Self] Str self, [ArgInfo(Essential = true)] Obj value)
     {
-        if (value.As<Str>(out var str))
+        if (!value.As<Str>(out var str))
             return new Err("invalid argument: value");
 
         return Bool.From(self.Value.EndsWith(str.Value));
@@ -262,7 +262,7 @@ public class Str : Ref<string>
     )]
     public static Obj Split([Self] Str self, [ArgInfo(Essential = true)] Obj sep)
     {
-        if (sep.As<Str>(out var str))
+        if (!sep.As<Str>(out var str))
             return new Err("invalid argument: value");
 
         var parts = self.Value.Split(str.Value);
@@ -278,7 +278,7 @@ public class Str : Ref<string>
     )]
     public static Obj Trim([Self] Str self, [ArgInfo(Essential = true)] Obj chars)
     {
-        if (chars.As<Str>(out var str))
+        if (!chars.As<Str>(out var str))
             return new Err("invalid argument: value");
 
         return From(self.Value.Trim(str.Value.ToCharArray()));
@@ -293,7 +293,7 @@ public class Str : Ref<string>
     )]
     public static Obj Join([Self] Str self, [ArgInfo(Essential = true)] Obj values)
     {
-        if (values.Iter().As<Iters>(out var str))
+        if (!values.Iter().As<Iters>(out var str))
             return new Err("invalid argument: values");
 
         var strs = new List<string>();
@@ -304,7 +304,7 @@ public class Str : Ref<string>
             if (s is Err err)
                 return err;
 
-            if (!str.As<Str>(out var strValue))
+            if (!s.As<Str>(out var strValue))
                 return new Err($"cannot join '{item.Type}' with '{self.Type}'");
 
             strs.Add(strValue.Value);
@@ -325,12 +325,12 @@ public class Str : Ref<string>
         [ArgInfo(Essential = true)] Obj width,
         [ArgInfo(Optional = true)] Obj fill = null!)
     {
-        if (width.As<Int>(out var widthValue))
+        if (!width.As<Int>(out var widthValue))
             return new Err("invalid argument: width");
 
         fill ??= From(" ");
 
-        if (fill.As<Str>(out var fillValue))
+        if (!fill.As<Str>(out var fillValue))
             return new Err("invalid argument: fill");
 
         var pad = Math.Max(0, widthValue.Value - self.Value.Length);
@@ -352,12 +352,12 @@ public class Str : Ref<string>
         [ArgInfo(Essential = true)] Obj width,
         [ArgInfo(Optional = true)] Obj fill = null!)
     {
-        if (width.As<Int>(out var widthValue))
+        if (!width.As<Int>(out var widthValue))
             return new Err("invalid argument: width");
 
         fill ??= From(" ");
 
-        if (fill.As<Str>(out var fillValue))
+        if (!fill.As<Str>(out var fillValue))
             return new Err("invalid argument: fill");
 
         var pad = Math.Max(0, widthValue.Value - self.Value.Length);
@@ -377,12 +377,12 @@ public class Str : Ref<string>
        [ArgInfo(Essential = true)] Obj width,
        [ArgInfo(Optional = true)] Obj fill = null!)
     {
-        if (width.As<Int>(out var widthValue))
+        if (!width.As<Int>(out var widthValue))
             return new Err("invalid argument: width");
 
         fill ??= From(" ");
 
-        if (fill.As<Str>(out var fillValue))
+        if (!fill.As<Str>(out var fillValue))
             return new Err("invalid argument: fill");
 
         var pad = Math.Max(0, widthValue.Value - self.Value.Length);
@@ -402,9 +402,9 @@ public class Str : Ref<string>
        [ArgInfo(Essential = true)] Obj oldValue,
        [ArgInfo(Optional = true)] Obj newValue)
     {
-        if (oldValue.As<Str>(out var oldStr))
+        if (!oldValue.As<Str>(out var oldStr))
             return new Err("invalid argument: old_value");
-        if (newValue.As<Str>(out var newStr))
+        if (!newValue.As<Str>(out var newStr))
             return new Err("invalid argument: new_value");
 
         return From(self.Value.Replace(oldStr.Value, newStr.Value));
@@ -414,12 +414,12 @@ public class Str : Ref<string>
         Name = "find",
         Description = "Returns the result of text.find().",
         Example = "text.find(subStr)",
-        ReturnType = "integer",
+        ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj Find([Self] Str self, [ArgInfo(Essential = true)] Obj subStr)
     {
-        if (subStr.As<Str>(out var subStrValue))
+        if (!subStr.As<Str>(out var subStrValue))
             return new Err("invalid argument: sub_str");
 
         return Int.From(self.Value.IndexOf(subStrValue.Value));

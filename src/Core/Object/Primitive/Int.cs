@@ -58,8 +58,8 @@ public class Int : Val<long>
 
     public override Obj IDiv(Obj other) => other switch
     {
-        Int i => i.Value == 0 ? new Err($"{Type} division by zero") : new Int((long)((double)Value / i.Value)),
-        Float f => f.Value == 0 ? new Err($"{Type} division by zero") : new Int((long)(Value / f.Value)),
+        Int i => i.Value == 0 ? new Err($"{Type} division by zero") : From(Value / i.Value),
+        Float f => f.Value == 0 ? new Err($"{Type} division by zero") : From((long)(Value / f.Value)),
         _ => new Err($"unsupported operand type(s) for //: 'int' and '{other.Type}'")
     };
 

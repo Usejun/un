@@ -70,13 +70,15 @@ public class Stru(UnType type, string[] names) : Obj(type)
         foreach (var name in allNames)
         {
             var neq = Members[name].NEq(other.Members[name]);
-
-            if (neq.As<Bool>(out var isNotEqual) && isNotEqual.Value)
-                return Bool.False;
-            else if (neq.As<Err>(out _))
+            if (neq.As<Bool>(out var isNotEqual))
+            {
+                if (isNotEqual.Value)
+                    return Bool.False;
+                continue;
+            }
+            if (neq is Err)
                 return neq;
-            else 
-                return new Err($"equals operand is must be a boolean");
+            return new Err($"equals operand is must be a boolean");
         }
 
         return Bool.True;

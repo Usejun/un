@@ -100,7 +100,7 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
         Name = "contains_key",
         Description = "Returns the result of data.contains key().",
         Example = "data.contains_key(key)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj ContainsKey(
@@ -112,7 +112,7 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
         Name = "contains_value",
         Description = "Returns the result of data.contains value().",
         Example = "data.contains_value(value)",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "any" }
     )]
     public static Obj ContainsValue([Self] Dict self, [ArgInfo(Essential = true)] Obj value)

@@ -26,8 +26,8 @@ public static class Fs
         Name = "exists",
         Description = "Checks whether a file or directory exists.",
         Example = "write(exists(\"notes.txt\"))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Exists([ArgInfo(Essential = true)] Obj path)
     {
@@ -41,8 +41,8 @@ public static class Fs
         Name = "file",
         Description = "Checks whether a path is an existing file.",
         Example = "write(file(\"notes.txt\"))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj FileExists([ArgInfo(Essential = true)] Obj path)
     {
@@ -56,8 +56,8 @@ public static class Fs
         Name = "dir",
         Description = "Checks whether a path is an existing directory.",
         Example = "write(dir(\"data\"))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj DirectoryExists([ArgInfo(Essential = true)] Obj path)
     {
@@ -71,8 +71,8 @@ public static class Fs
         Name = "read",
         Description = "Reads all text from a file.",
         Example = "text = read(\"notes.txt\")",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Read([ArgInfo(Essential = true)] Obj path)
     {
@@ -90,7 +90,7 @@ public static class Fs
         Description = "Writes text to a file, replacing existing content.",
         Example = "write(\"notes.txt\", \"Hello\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Write(
         [ArgInfo(Essential = true)] Obj path,
@@ -112,7 +112,7 @@ public static class Fs
         Description = "Appends text to a file.",
         Example = "append(\"notes.txt\", \"\\nNext line\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Append(
         [ArgInfo(Essential = true)] Obj path,
@@ -134,7 +134,7 @@ public static class Fs
         Description = "Deletes a file or directory.",
         Example = "delete(\"old.txt\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Delete([ArgInfo(Essential = true)] Obj path)
     {
@@ -154,7 +154,7 @@ public static class Fs
         Description = "Copies a file to a destination path.",
         Example = "copy(\"from.txt\", \"to.txt\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Copy(
         [ArgInfo(Essential = true)] Obj source,
@@ -176,7 +176,7 @@ public static class Fs
         Description = "Moves a file to a destination path.",
         Example = "move(\"draft.txt\", \"archive/draft.txt\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Move(
         [ArgInfo(Essential = true)] Obj source,
@@ -198,7 +198,7 @@ public static class Fs
         Description = "Renames a file within its current directory.",
         Example = "rename(\"draft.txt\", \"final.txt\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string", "string" }
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Rename(
         [ArgInfo(Essential = true)] Obj path,
@@ -223,7 +223,7 @@ public static class Fs
         Description = "Creates a file when it does not exist.",
         Example = "touch(\"notes.txt\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Touch([ArgInfo(Essential = true)] Obj path)
     {
@@ -241,7 +241,7 @@ public static class Fs
         Description = "Creates a directory and missing parent directories.",
         Example = "mkdir(\"data/output\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Mkdir([ArgInfo(Essential = true)] Obj path)
     {
@@ -258,7 +258,7 @@ public static class Fs
         Description = "Deletes a directory, optionally including its contents.",
         Example = "rmdir(\"cache\", true)",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string", "boolean" }
+        ArgumentTypes = new[] { "str", "bool" }
     )]
     public static Obj Rmdir(
         [ArgInfo(Essential = true)] Obj path,
@@ -287,7 +287,7 @@ public static class Fs
         Description = "Lists file-system entries in a directory.",
         Example = "items = list(\"data\")",
         ReturnType = "list",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj List([ArgInfo(Essential = true)] Obj path)
     {
@@ -305,7 +305,7 @@ public static class Fs
         Description = "Lists files in a directory.",
         Example = "items = files(\"data\")",
         ReturnType = "list",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Files([ArgInfo(Essential = true)] Obj path)
     {
@@ -323,7 +323,7 @@ public static class Fs
         Description = "Lists subdirectories in a directory.",
         Example = "items = dirs(\"data\")",
         ReturnType = "list",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Dirs([ArgInfo(Essential = true)] Obj path)
     {
@@ -341,7 +341,7 @@ public static class Fs
         Description = "Lists file-system entries recursively.",
         Example = "items = walk(\"data\")",
         ReturnType = "list",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Walk([ArgInfo(Essential = true)] Obj path)
     {
@@ -358,8 +358,8 @@ public static class Fs
         Name = "size",
         Description = "Returns the byte size of a file.",
         Example = "write(size(\"notes.txt\"))",
-        ReturnType = "integer",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "int",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Size([ArgInfo(Essential = true)] Obj path)
     {
@@ -376,8 +376,8 @@ public static class Fs
         Name = "created",
         Description = "Returns a path creation time in UTC.",
         Example = "write(created(\"notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Created([ArgInfo(Essential = true)] Obj path)
     {
@@ -393,8 +393,8 @@ public static class Fs
         Name = "modified",
         Description = "Returns a path last-modified time in UTC.",
         Example = "write(modified(\"notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Modified([ArgInfo(Essential = true)] Obj path)
     {
@@ -410,8 +410,8 @@ public static class Fs
         Name = "accessed",
         Description = "Returns a path last-accessed time in UTC.",
         Example = "write(accessed(\"notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Accessed([ArgInfo(Essential = true)] Obj path)
     {
@@ -429,8 +429,8 @@ public static class Fs
         Name = "readonly",
         Description = "Checks whether a file is read-only.",
         Example = "write(readonly(\"notes.txt\"))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Readonly([ArgInfo(Essential = true)] Obj path)
     {
@@ -447,8 +447,8 @@ public static class Fs
         Name = "hidden",
         Description = "Checks whether a path has the hidden attribute.",
         Example = "write(hidden(\"notes.txt\"))",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Hidden([ArgInfo(Essential = true)] Obj path)
     {
@@ -465,7 +465,7 @@ public static class Fs
         Name = "join",
         Description = "Joins path segments using the platform separator.",
         Example = "path = join(\"data\", \"notes.txt\")",
-        ReturnType = "string",
+        ReturnType = "str",
         ArgumentTypes = new[] { "tuple" }
     )]
     public static Obj Join([ArgInfo(Positional = true)] Obj paths)
@@ -490,8 +490,8 @@ public static class Fs
         Name = "parent",
         Description = "Returns the parent directory of a path.",
         Example = "write(parent(\"data/notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Parent([ArgInfo(Essential = true)] Obj path)
     {
@@ -505,8 +505,8 @@ public static class Fs
         Name = "name",
         Description = "Returns the file name portion of a path.",
         Example = "write(name(\"data/notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Name([ArgInfo(Essential = true)] Obj path)
     {
@@ -520,8 +520,8 @@ public static class Fs
         Name = "stem",
         Description = "Returns a file name without its extension.",
         Example = "write(stem(\"notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Stem([ArgInfo(Essential = true)] Obj path)
     {
@@ -535,8 +535,8 @@ public static class Fs
         Name = "ext",
         Description = "Returns the extension portion of a path.",
         Example = "write(ext(\"notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Extension([ArgInfo(Essential = true)] Obj path)
     {
@@ -550,8 +550,8 @@ public static class Fs
         Name = "absolute",
         Description = "Returns the absolute form of a path.",
         Example = "write(absolute(\"notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Absolute([ArgInfo(Essential = true)] Obj path)
     {
@@ -565,8 +565,8 @@ public static class Fs
         Name = "relative",
         Description = "Returns a path relative to another directory.",
         Example = "write(relative(\"data\", \"data/notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string", "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str", "str" }
     )]
     public static Obj Relative(
         [ArgInfo(Essential = true)] Obj from,
@@ -585,8 +585,8 @@ public static class Fs
         Name = "normalize",
         Description = "Normalizes a path to its absolute form.",
         Example = "write(normalize(\"data/../notes.txt\"))",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "string" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Normalize([ArgInfo(Essential = true)] Obj path)
     {
@@ -600,7 +600,7 @@ public static class Fs
         Name = "cwd",
         Description = "Returns the current working directory.",
         Example = "write(cwd())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Cwd() => Str.From(Environment.CurrentDirectory);
 
@@ -609,7 +609,7 @@ public static class Fs
         Description = "Changes the current working directory.",
         Example = "chdir(\"data\")",
         ReturnType = "none",
-        ArgumentTypes = new[] { "string" }
+        ArgumentTypes = new[] { "str" }
     )]
     public static Obj Chdir([ArgInfo(Essential = true)] Obj path)
     {
@@ -627,7 +627,7 @@ public static class Fs
         Name = "temp",
         Description = "Returns the system temporary directory.",
         Example = "write(temp())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Str Temp() => Str.From(Path.GetTempPath());
 
@@ -635,7 +635,7 @@ public static class Fs
         Name = "home",
         Description = "Returns the current user's home directory.",
         Example = "write(home())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Obj Home() => Str.From(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
 
@@ -643,7 +643,7 @@ public static class Fs
         Name = "exe",
         Description = "Returns the current process executable path.",
         Example = "write(exe())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Str Exe() => Str.From(Environment.ProcessPath ?? "");
 
@@ -651,7 +651,7 @@ public static class Fs
         Name = "app",
         Description = "Returns the application base directory.",
         Example = "write(app())",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Str App() => Str.From(AppContext.BaseDirectory);
 }

@@ -54,7 +54,7 @@ public class Float(double value) : Val<double>(value, UnType.Float)
 
     public override Obj IDiv(Obj other) => other switch
     {
-        Int i => i.Value == 0 ? new Err($"{Type} division by zero") : Int.From((long)Value / i.Value),
+        Int i => i.Value == 0 ? new Err($"{Type} division by zero") : Int.From((long)(Value / i.Value)),
         Float f => f.Value == 0 ? new Err($"{Type} division by zero") : Int.From((long)(Value / f.Value)),
         _ => new Err($"unsupported operand type(s) for //: 'float' and '{other.Type}'")
     };

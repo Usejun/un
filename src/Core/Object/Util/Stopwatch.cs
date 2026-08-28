@@ -49,7 +49,7 @@ public class Stopwatch() : Ref<System.Diagnostics.Stopwatch>(new(), UnType.Creat
         Name = "lap",
         Description = "Returns the result of timer.lap().",
         Example = "timer.lap()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Lap([Self] Stopwatch self)
     {
@@ -76,7 +76,7 @@ public class Stopwatch() : Ref<System.Diagnostics.Stopwatch>(new(), UnType.Creat
         Name = "is_running",
         Description = "Checks whether a stopwatch value running.",
         Example = "timer.is_running()",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool IsRunning([Self] Stopwatch self) => Bool.From(self.Value.IsRunning);
 
@@ -84,7 +84,7 @@ public class Stopwatch() : Ref<System.Diagnostics.Stopwatch>(new(), UnType.Creat
         Name = "tick",
         Description = "Returns the result of timer.tick().",
         Example = "timer.tick()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Tick([Self] Stopwatch self) => Int.From(self.Value.ElapsedTicks);
 
@@ -92,7 +92,7 @@ public class Stopwatch() : Ref<System.Diagnostics.Stopwatch>(new(), UnType.Creat
         Name = "ms",
         Description = "Returns the result of timer.ms().",
         Example = "timer.ms()",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Ms([Self] Stopwatch self) => Int.From(self.Value.ElapsedMilliseconds);
 

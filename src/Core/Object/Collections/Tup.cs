@@ -76,15 +76,21 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
         if (other is not Tup tup)
             return Bool.False;
 
+        if (Count != tup.Count)
+            return Bool.False;
+
         for (int i = 0; i < Count; i++)
         {
             var neq = Value[i].NEq(tup[i]);
-            if (neq.As<Bool>(out var isNotEqual) && isNotEqual.Value)
-                return Bool.False;
-            else if (neq.As<Err>(out _))
+            if (neq.As<Bool>(out var isNotEqual))
+            {
+                if (isNotEqual.Value)
+                    return Bool.False;
+                continue;
+            }
+            if (neq is Err)
                 return neq;
-            else
-                return new Err($"equals operand is must be a boolean");
+            return new Err($"equals operand is must be a boolean");
         }
 
         return Bool.True;
@@ -102,13 +108,15 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
         foreach (var value in Value)
         {
             var eq = value.Eq(obj);
-
-            if (eq.As<Bool>(out var isEqual) && isEqual.Value)
-                return Bool.True;
-            else if (eq.As<Err>(out _))
+            if (eq.As<Bool>(out var isEqual))
+            {
+                if (isEqual.Value)
+                    return Bool.True;
+                continue;
+            }
+            if (eq is Err)
                 return eq;
-            else
-                return new Err($"equals operand is must be a boolean");
+            return new Err($"equals operand is must be a boolean");
         }
         return Bool.False;
     }

@@ -22,7 +22,7 @@ public static class Random
         Name = "next",
         Description = "Returns a non-negative pseudo-random integer.",
         Example = "write(next())",
-        ReturnType = "integer"
+        ReturnType = "int"
     )]
     public static Int Next() => Object.Primitive.Int.From(shared.Next());
 
@@ -31,7 +31,7 @@ public static class Random
         Description = "Returns a random integer in an inclusive range.",
         Example = "value = int(1, 6)",
         ReturnType = "random",
-        ArgumentTypes = new[] { "integer", "integer" }
+        ArgumentTypes = new[] { "int", "int" }
     )]
     public static Obj Int(
         [ArgInfo(Essential = true)] Obj min,
@@ -78,7 +78,7 @@ public static class Random
         Name = "bool",
         Description = "Returns a pseudo-random boolean value.",
         Example = "write(bool())",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Bool Bool() => Object.Primitive.Bool.From(shared.Next(2) == 0);
 
@@ -86,8 +86,8 @@ public static class Random
         Name = "bytes",
         Description = "Returns a list of pseudo-random byte values.",
         Example = "values = bytes(16)",
-        ReturnType = "boolean",
-        ArgumentTypes = new[] { "integer" }
+        ReturnType = "bool",
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Bytes(
     [ArgInfo(Essential = true)] Obj length)
@@ -138,7 +138,7 @@ public static class Random
         Description = "Returns multiple random values from a list with replacement.",
         Example = "items = choices(values, 3)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "list", "integer" }
+        ArgumentTypes = new[] { "list", "int" }
     )]
     public static Obj Choices(
         [ArgInfo(Essential = true)] Obj obj,
@@ -162,7 +162,7 @@ public static class Random
         Description = "Returns unique random values from a list.",
         Example = "items = sample(values, 3)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "list", "integer" }
+        ArgumentTypes = new[] { "list", "int" }
     )]
     public static Obj Sample(
         [ArgInfo(Essential = true)] Obj obj,
@@ -185,7 +185,7 @@ public static class Random
         Name = "chance",
         Description = "Returns true according to a probability from zero to one.",
         Example = "if chance(0.25)\n    write(\"selected\")",
-        ReturnType = "boolean",
+        ReturnType = "bool",
         ArgumentTypes = new[] { "float" }
     )]
     public static Obj Chance([ArgInfo(Essential = true)] Obj probability)
@@ -203,7 +203,7 @@ public static class Random
         Description = "Sets the shared pseudo-random generator seed.",
         Example = "seed(42)",
         ReturnType = "none",
-        ArgumentTypes = new[] { "integer" }
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj Seed([ArgInfo(Essential = true)] Obj seed)
     {
@@ -218,16 +218,16 @@ public static class Random
         Name = "uuid",
         Description = "Returns a new UUID string.",
         Example = "id = uuid()",
-        ReturnType = "string"
+        ReturnType = "str"
     )]
     public static Str UUID() => Str.From(Guid.NewGuid().ToString());
 
     [Native(
-        Name = "string",
+        Name = "str",
         Description = "Returns an alphanumeric pseudo-random string.",
         Example = "token = string(12)",
-        ReturnType = "string",
-        ArgumentTypes = new[] { "integer" }
+        ReturnType = "str",
+        ArgumentTypes = new[] { "int" }
     )]
     public static Obj String([ArgInfo(Essential = true)] Obj length)
     {
@@ -296,7 +296,7 @@ public static class Random
         Description = "Returns a shuffled list of integers in a range.",
         Example = "values = range(1, 10)",
         ReturnType = "list",
-        ArgumentTypes = new[] { "integer", "integer" }
+        ArgumentTypes = new[] { "int", "int" }
     )]
     public static Obj Range(
         [ArgInfo(Essential = true)] Obj start,
