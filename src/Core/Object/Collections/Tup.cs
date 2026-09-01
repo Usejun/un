@@ -6,7 +6,7 @@ using Un.Reflection;
 
 namespace Un.Object.Collections;
 
-[BuiltinType("tuple")]
+[BuiltinType("tuple", Description = "Immutable ordered sequence with destructuring support.", Example = "t = (1, 2, 3)\nx, y, z = t\nio.write(x)")]
 public class Tup : Ref<Obj[]>, IEnumerable<Obj>
 {
     public struct Enumerator(Tup tup) : IEnumerator<Obj>

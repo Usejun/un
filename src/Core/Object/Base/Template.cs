@@ -4,7 +4,7 @@ using Un.Reflection;
 
 namespace Un;
 
-[BuiltinType("template")]
+[BuiltinType("template", Description = "Tagged template for string interpolation.", Example = "name = \"Un\"\nmsg = tag`hello ${name}`\nio.write(msg)")]
 public class Template(IReadOnlyList<string> strings, IReadOnlyList<Obj> values) : Obj(UnType.Create("template"))
 {
     public Template() : this([], []) { }

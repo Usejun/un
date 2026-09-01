@@ -4,7 +4,7 @@ using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
-[BuiltinType("bool")]
+[BuiltinType("bool", Description = "Boolean true/false value.", Example = "b = true\nio.write(b and false)")]
 public class Bool : Val<bool>
 {
     public readonly static Bool True = new(true);

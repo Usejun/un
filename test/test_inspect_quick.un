@@ -1,0 +1,3 @@
+use inspect
+use io
+io.write(inspect.attr("hello"))

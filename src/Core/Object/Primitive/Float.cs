@@ -4,7 +4,7 @@ using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
-[BuiltinType("float")]
+[BuiltinType("float", Description = "Double-precision floating point number.", Example = "f = 3.14\nio.write(f * 2.0)")]
 public class Float(double value) : Val<double>(value, UnType.Float)
 {
     public Float() : this(0) { }

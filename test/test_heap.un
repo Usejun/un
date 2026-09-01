@@ -1,3 +1,5 @@
+use io
+
 class Heap
     data = 0
 
@@ -59,7 +61,7 @@ h.push(5)
 h.push(3)
 h.push(7)
 
-write(h.pop())
-write(h.pop())
-write(h.pop())
+io.write(h.pop())
+io.write(h.pop())
+io.write(h.pop())
 

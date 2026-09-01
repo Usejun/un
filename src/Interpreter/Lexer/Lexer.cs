@@ -420,6 +420,8 @@ public class Lexer(Source source)
             "wait" => TokenType.Wait,
 
             "try" => TokenType.Try,
+            "catch" => TokenType.Catch,
+            "finally" => TokenType.Finally,
             "defer" => TokenType.Defer,
 
             "none" => TokenType.None,

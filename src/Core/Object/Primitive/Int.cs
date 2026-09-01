@@ -4,7 +4,7 @@ using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
-[BuiltinType("int")]
+[BuiltinType("int", Description = "64-bit signed integer with caching for small values.", Example = "n = 42\nm = n + 10\nio.write(n)")]
 public class Int : Val<long>
 {
     private readonly static Int[] caches = [.. Enumerable.Range(-5, 262).Select(i => new Int(i))];

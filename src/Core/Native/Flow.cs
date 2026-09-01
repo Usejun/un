@@ -15,7 +15,7 @@ public static class Flow
         ReturnType = "pool",
         ArgumentTypes = new[] { "int" }
     )]
-    public static Obj Spawn([ArgInfo(Optional = true)] Obj workerCount = null!)
+    public static Obj Spawn([ArgInfo(Optional = true, Name = "worker_count")] Obj workerCount = null!)
     {
         workerCount ??= Int.From(4);
 

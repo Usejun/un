@@ -47,6 +47,17 @@ public class Json : Ref<Obj>
 
     public override Json Clone() => new(Value.Clone());
 
+    private static string Escape(string s)
+    {
+        return s.Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t")
+                .Replace("\b", "\\b")
+                .Replace("\f", "\\f");
+    }
+
     public static string Stringfy(Obj obj, int depth = 0)
     {
         if (obj is Dict dict)
@@ -54,7 +65,7 @@ public class Json : Ref<Obj>
             string buf = "{\n";
 
             foreach (var (key, value) in dict.Value)
-                buf += $"{new string(' ', 3 * depth + 1)}\"{key}\": {Stringfy(value, depth + 1)},\n";
+                buf += $"{new string(' ', 3 * depth + 1)}\"{Escape(Str.To(key).Value)}\": {Stringfy(value, depth + 1)},\n";
             buf = buf.TrimEnd(',', '\n');
             buf += $"\n{new string(' ', 3 * depth)}}}";
             return buf;
@@ -68,7 +79,7 @@ public class Json : Ref<Obj>
             Float f => f.Value.ToString(),
             Bool b => b.Value ? "true" : "false",
             List list => "[" + string.Join(", ", list.Value.Select(v => Stringfy(v, depth + 1))) + "]",
-            _ => $"\"{Str.To(obj).Value}\""
+            _ => $"\"{Escape(Str.To(obj).Value)}\""
         };
     }
 

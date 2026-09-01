@@ -4,7 +4,7 @@ using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
-[BuiltinType("date")]
+[BuiltinType("date", Description = "Date and time value with millisecond precision.", Example = "d = date()\nio.write(d)")]
 public class Date(DateTime value) : Val<DateTime>(value, UnType.Date)
 {
     public Date() : this(DateTime.Now) { }

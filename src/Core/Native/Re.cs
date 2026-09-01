@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 using Un.Object;
 using Un.Object.Collections;
 using Un.Object.Primitive;
@@ -9,6 +10,10 @@ namespace Un.Native;
 [NativeModule("re")]
 public static class Re
 {
+    private const int MAX_CACHE_SIZE = 1000;
+
+    private static readonly ConcurrentDictionary<string, Regex> cache = new();
+
     static bool GetString(Obj obj, out string value, out Obj err)
     {
         if (!obj.As<Str>(out var str))
@@ -23,40 +28,33 @@ public static class Re
         return true;
     }
 
-    private static readonly Dictionary<string, Regex> cache = [];
-    private static readonly object cacheLock = new();
+    static Regex GetOrCompile(string pattern)
+    {
+        if (cache.TryGetValue(pattern, out var regex))
+            return regex;
+
+        regex = new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(1));
+
+        if (cache.Count >= MAX_CACHE_SIZE)
+            cache.Clear(); 
+
+        cache.TryAdd(pattern, regex);
+        return regex;
+    }
+
 
     static bool TryCompile(string pattern, out Regex regex, out Obj err)
     {
-        lock (cacheLock)
-        {
-            if (cache.TryGetValue(pattern, out regex!))
-            {
-                err = Obj.None;
-                return true;
-            }
-        }
-
         try
         {
-            regex = new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(1));
-            lock (cacheLock)
-            {
-                cache[pattern] = regex;
-            }
+            regex = GetOrCompile(pattern);
             err = Obj.None;
             return true;
         }
         catch (ArgumentException e)
         {
             regex = null!;
-            err = new Err($"invalid pattern: {e.Message}");
-            return false;
-        }
-        catch (RegexMatchTimeoutException)
-        {
-            regex = null!;
-            err = new Err("pattern match timed out");
+            err = new Err($"invalid regex pattern: {e.Message}");
             return false;
         }
     }

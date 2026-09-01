@@ -45,7 +45,7 @@ public class Lock : Obj
         Name = "try_acquire",
         Description = "Returns the result of guard.try acquire().",
         Example = "guard.try_acquire()",
-        ReturnType = "boolean"
+        ReturnType = "bool"
     )]
     public static Obj TryAcquire([Self] Lock self)
     {

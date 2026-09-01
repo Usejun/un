@@ -15,7 +15,8 @@ public static class Inspect
         ReturnType = "list",
         ArgumentTypes = new[] { "any" }
     )]
-    public static List Attr([ArgInfo(Essential = true)] Obj value) => new([.. value.Members.Keys.Select(Str.From)]);
+    public static List Attr([ArgInfo(Essential = true)] Obj value)
+        => new([.. Un.Global.GetAllAttrKeys(value).Select(Str.From)]);
 
     [Native(
         Name = "global",
@@ -36,19 +37,20 @@ public static class Inspect
         Name = "getattr",
         Description = "Reads an attribute with an optional default.",
         Example = "name = getattr(user, \"name\", \"guest\")",
-        ReturnType = "list",
+        ReturnType = "any",
         ArgumentTypes = new[] { "any", "str", "any" }
     )]
     public static Obj GetAttr(
         [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Essential = true)] Obj name,
-        [ArgInfo(Optional = true)] Obj defaultValue = null!)
+        [ArgInfo(Optional = true, Name = "default_value")] Obj defaultValue = null!)
     {
         if (!name.ToStr().As<Str>(out var nameValue))
             return new Err("expected 'name' argument to be of type 'str'");
-        if (!value.Members.TryGetValue(nameValue.Value, out var attrValue))
-            return defaultValue ?? new Err($"attribute '{nameValue.Value}' not found");
-        return attrValue;
+        var result = Un.Global.GetAttrDeep(value, nameValue.Value);
+        if (result is Err)
+            return defaultValue ?? result;
+        return result;
     }
 
     [Native(
@@ -56,7 +58,7 @@ public static class Inspect
         Description = "Checks whether an object has an attribute.",
         Example = "write(hasattr(user, \"name\"))",
         ReturnType = "bool",
-        ArgumentTypes = new[] { "object", "str" }
+        ArgumentTypes = new[] { "any", "str" }
     )]
     public static Obj HasAttr(
         [ArgInfo(Essential = true)] Obj value,
@@ -64,7 +66,7 @@ public static class Inspect
     {
         if (!name.ToStr().As<Str>(out var nameValue))
             return new Err("expected 'name' argument to be of type 'str'");
-        return Bool.From(value.Members.ContainsKey(nameValue.Value));
+        return Bool.From(Un.Global.HasAttrDeep(value, nameValue.Value));
     }
 
     [Native(
@@ -77,7 +79,7 @@ public static class Inspect
     public static Obj SetAttr(
         [ArgInfo(Essential = true)] Obj value,
         [ArgInfo(Essential = true)] Obj name,
-        [ArgInfo(Essential = true)] Obj newValue)
+        [ArgInfo(Essential = true, Name = "new_value")] Obj newValue)
     {
         if (!name.ToStr().As<Str>(out var nameValue))
             return new Err("expected 'name' argument to be of type 'str'");

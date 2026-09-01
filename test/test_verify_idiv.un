@@ -1,7 +1,0 @@
-use io
-io.write(7 // 2)
-io.write(7 // 2.0)
-io.write(7.5 // 2)
-io.write(7.5 // 2.5)
-io.write(-7 // 2)
-io.write("done")

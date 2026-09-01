@@ -1,9 +1,0 @@
-use io
-a = 7
-b = 2
-io.write(a // b)
-c = 7.5
-io.write(c // b)
-io.write(c // 2.5)
-io.write(-7 // 2)
-io.write("done")

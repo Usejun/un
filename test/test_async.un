@@ -1,6 +1,9 @@
+use io
+use time
+
 fn slow(x)
-    sleep(1.0)
+    time.sleep(1.0)
     -> x * 2
 
 a = go slow(5)
-write(wait a)
+io.write(wait a)

@@ -1,7 +1,0 @@
-x = 10
-
-if x > 5
-    write("big")
-else
-    write("small")
-

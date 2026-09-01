@@ -67,7 +67,18 @@ public static class Optimizer
         var right = node.Children[1];
 
         if (IsConst(left, out var a) && IsConst(right, out var b))
-            return Node.Const(Eval(node.Operator, a, b), node.Start, node.Length);
+        {
+            if (node.Operator is TokenType.And or TokenType.Or or TokenType.Xor)
+                return node;
+            try
+            {
+                return Node.Const(Eval(node.Operator, a, b), node.Start, node.Length);
+            }
+            catch (Panic)
+            {
+                return node;
+            }
+        }
 
         switch (node.Operator)
         {
@@ -208,6 +219,7 @@ public static class Optimizer
             TokenType.Slash => a / b,
             TokenType.DoubleSlash => a / b,
             TokenType.Percent => a % b,
+            TokenType.DoubleAsterisk => (long)Math.Pow(a, b),
 
             TokenType.Equal => a == b,
             TokenType.Unequal => a != b,
@@ -231,6 +243,7 @@ public static class Optimizer
             TokenType.Slash => a / b,
             TokenType.DoubleSlash => (long)(a / b),
             TokenType.Percent => a % b,
+            TokenType.DoubleAsterisk => Math.Pow(a, b),
 
             TokenType.Equal => a == b,
             TokenType.Unequal => a != b,

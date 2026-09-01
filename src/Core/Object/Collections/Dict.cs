@@ -6,7 +6,7 @@ using Un.Reflection;
 
 namespace Un.Object.Collections;
 
-[BuiltinType("dict")]
+[BuiltinType("dict", Description = "Hash map storing key-value pairs.", Example = "d = {\"a\": 1, \"b\": 2}\nio.write(d[\"a\"])")]
 public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value, UnType.Dict)
 {
     public Dict() : this([]) { }
@@ -93,7 +93,7 @@ public class Dict(Dictionary<Obj, Obj> value) : Ref<Dictionary<Obj, Obj>>(value,
     public static Obj Get(
         [Self] Dict self,
         [ArgInfo(Essential = true)] Obj key,
-        [ArgInfo(Optional = true)] Obj defaultValue = null!)
+        [ArgInfo(Optional = true, Name = "default_value")] Obj defaultValue = null!)
         => self.Value.TryGetValue(key, out var value) ? value : (defaultValue ?? None);
 
     [Native(

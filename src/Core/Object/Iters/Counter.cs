@@ -21,7 +21,7 @@ public class Counter : Iters
     {
         { Count: 0 } => new Counter(0),
         { Count: 1 } and [Int i] => new Counter(i.Value),
-        _ => new Err($"invaild '{Type}' initialize"),
+        _ => new Err($"invalid '{Type}' initialize"),
     };
 
     public override Int Len() => Int.From(long.MaxValue);

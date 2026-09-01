@@ -91,10 +91,10 @@ public sealed class Runner(Context context, Context? parentContext = null)
     {
         var fullPath = Path.Combine(Global.PATH, path.EndsWith(".un") ? path : $"{path}.un");
 
-        if (!File.Exists(fullPath))
+        if (!Global.FileSystem.FileExists(fullPath))
             throw new Panic($"file '{path}' not found");
 
-        var code = File.ReadAllText(fullPath).Replace("\r\n", "\n").Replace('\r', '\n');
+        var code = Global.FileSystem.ReadAllText(fullPath).Replace("\r\n", "\n").Replace('\r', '\n');
         var file = new Source(fullPath, code);
 
         return new(new(scope, file, []));

@@ -60,6 +60,9 @@ public sealed class Evaluator(Context context)
             NodeKind.Skip => throw new SkipFlow(node.Start, node.Length),
             NodeKind.Break => throw new BreakFlow(node.Start, node.Length),
 
+            NodeKind.Try => EvalTry(node),
+            NodeKind.Defer => EvalDefer(node),
+
             NodeKind.Class => EvalClass(node),
             NodeKind.Enum => EvalEnum(node),
 
@@ -528,7 +531,7 @@ public sealed class Evaluator(Context context)
         if (Global.IsNative(last))
             Global.Include(last, moduleAlias, list);
         else
-            Global.Import(parts, moduleAlias, list);
+            Global.Import(parts, context.Source, moduleAlias, list);
 
         return Obj.None;
     }
@@ -671,14 +674,14 @@ public sealed class Evaluator(Context context)
     {
         var target = node.Children[0];
         var iterable = node.Children[1];
-        var body = node.Children[2];
+        var body = node.Children[2];         
 
         if (!Eval(iterable).Iter().As<Iters>(out var iter))
             throw new Error($"{GetText(iterable)} is not iterable", node, context.Source);
 
         foreach (var item in iter.Value)
         {
-            BindPattern(target, item);
+            BindPattern(target, item, localOnly: true);
 
             try
             {
@@ -757,6 +760,105 @@ public sealed class Evaluator(Context context)
             }
         }
 
+        return Obj.None;
+    }
+
+    private Obj EvalTry(Node node)
+    {
+        var tryBlock = node.Children[0];
+        var catches = new List<Node>();
+        Node? finallyNode = null;
+        for (int i = 1; i < node.Children.Count; i++)
+        {
+            var child = node.Children[i];
+            if (child.Kind == NodeKind.Catch)
+                catches.Add(child);
+            else if (child.Kind == NodeKind.Finally)
+                finallyNode = child;
+        }
+
+        Obj result = Obj.None;
+        bool hasError = false;
+        Error? pendingError = null;
+
+        try
+        {
+            result = Eval(tryBlock);
+        }
+        catch (Error e)
+        {
+            hasError = true;
+            pendingError = e;
+            bool caught = false;
+            foreach (var catchNode in catches)
+            {
+                Node block;
+                string? varName = null;
+                if (catchNode.Children.Count == 2)
+                {
+                    varName = GetText(catchNode.Children[0]);
+                    block = catchNode.Children[1];
+                }
+                else
+                {
+                    block = catchNode.Children[0];
+                }
+
+                var catchScope = new Scope(context.Scope);
+                var prevScope = context.Scope;
+                context.Scope = catchScope;
+                if (varName != null)
+                    catchScope.Set(varName, new Err(e.Message, e.Header));
+
+                try
+                {
+                    result = Eval(block);
+                    caught = true;
+                    hasError = false;
+                    pendingError = null;
+                    break;
+                }
+                catch (Error)
+                {
+                    hasError = true;
+                    throw;
+                }
+                finally
+                {
+                    context.Scope = prevScope;
+                }
+            }
+            if (!caught)
+                throw;
+        }
+        finally
+        {
+            if (finallyNode != null)
+            {
+                var finallyBlock = finallyNode.Children[0];
+                try
+                {
+                    Eval(finallyBlock);
+                }
+                catch (Error)
+                {
+                    throw;
+                }
+                if (hasError && pendingError != null)
+                    throw pendingError;
+            }
+            else if (hasError && pendingError != null)
+            {
+            }
+        }
+
+        return result;
+    }
+
+    private Obj EvalDefer(Node node)
+    {
+        var block = node.Children[0];
+        context.Defers.Push(block);
         return Obj.None;
     }
 
@@ -880,14 +982,17 @@ public sealed class Evaluator(Context context)
         }
     }
 
-    private void BindPattern(Node pattern, Obj value)
+    private void BindPattern(Node pattern, Obj value, bool localOnly = false)
     {
         switch (pattern.Kind)
         {
             case NodeKind.Identifier:
                 {
                     var name = GetText(pattern);
-                    context.Scope.Set(name, value);
+                    if (localOnly)
+                        context.Scope.SetLocalOrDeclare(name, value);
+                    else
+                        context.Scope.SetLocalOrDeclare(name, value);
                     break;
                 }
             case NodeKind.Wildcard:
@@ -899,7 +1004,10 @@ public sealed class Evaluator(Context context)
 
                     var name = GetText(nameNode);
 
-                    context.Scope.Set(name, value);
+                    if (localOnly)
+                        context.Scope.SetLocalOrDeclare(name, value);
+                    else
+                        context.Scope.SetLocalOrDeclare(name, value);
 
                     break;
                 }

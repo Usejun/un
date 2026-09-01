@@ -13,8 +13,8 @@ public class Fn(Context closure) : Obj(UnType.Func)
 
     protected Obj Bind(Scope scope, Tup args)
     {
-        scope["self"] = Self;
-        scope["super"] = Super;
+        scope.SetLocal("self", Self);
+        scope.SetLocal("super", Super);
 
         if (TryBindSimplePositional(scope, args, out var simpleResult))
             return simpleResult;
@@ -71,13 +71,13 @@ public class Fn(Context closure) : Obj(UnType.Func)
             else
                 return new Err($"missing required argument '{arg.Name}'");
 
-            scope[arg.Name] = value;
+            scope.SetLocal(arg.Name, value);
         }
 
         if (!starArg.IsNull())
         {
             var rest = positional.Skip(posIndex).ToArray();
-            scope[starArg.Name] = new Tup(rest);
+            scope.SetLocal(starArg.Name, new Tup(rest));
         }
         else if (posIndex < positional.Count)
             return new Err("too many positional arguments");
@@ -89,7 +89,7 @@ public class Fn(Context closure) : Obj(UnType.Func)
             foreach (var (k, v) in keyword)
                 dict.Value[Str.From(k)] = v;
 
-            scope[kwArg.Name] = dict;
+            scope.SetLocal(kwArg.Name, dict);
         }
         else if (keyword.Count > 0)
             return new Err($"unexpected keyword argument '{keyword.Keys.First()}'");
@@ -120,13 +120,13 @@ public class Fn(Context closure) : Obj(UnType.Func)
 
             if (i < args.Count)
             {
-                scope[arg.Name] = args[i];
+                scope.SetLocal(arg.Name, args[i]);
                 continue;
             }
 
             if (!arg.IsEssential)
             {
-                scope[arg.Name] = arg.DefaultValue!;
+                scope.SetLocal(arg.Name, arg.DefaultValue!);
                 continue;
             }
 

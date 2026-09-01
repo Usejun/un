@@ -6,7 +6,7 @@ using Un.Reflection;
 
 namespace Un.Object.Iter;
 
-[BuiltinType("iter")]
+[BuiltinType("iter", Description = "Lazy iterable sequence with functional operators.", Example = "for x in iter.range(0, 5)\n    io.write(x)")]
 public class Iters(IEnumerable<Obj> value) : Ref<IEnumerable<Obj>>(value, UnType.Iter)
 {
     public Iters() : this([]) { }

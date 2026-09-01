@@ -16,12 +16,24 @@ public static class Global
 
     public static ulong MAXRECURSIONDEPTH = 1000;
 
+    public static IFileSystem FileSystem { get; set; } = new PhysicalFileSystem();
+
+    public static void SetPath(string path) => PATH = path;
+
+    private static HashSet<string>? _allowedNatives = null;
+
+    public static void SetAllowedModules(string[]? allow) => _allowedNatives = allow == null ? null : new HashSet<string>(allow, StringComparer.Ordinal);
+
+    public static bool IsAllowed(string name) => _allowedNatives == null || _allowedNatives.Contains(name);
+
     private static readonly Scope scope = new();
     private static readonly Scope classes = new();
     private static readonly Dictionary<string, Attributes> originalClasses = [];
     private static readonly Dictionary<string, Type> natives = Assembly.GetExecutingAssembly().GetTypes()!
                                                       .Where(t => t.GetCustomAttribute<NativeModuleAttribute>() is not null)
                                                       .ToDictionary(t => t.GetCustomAttribute<NativeModuleAttribute>()!.Name, t => t);
+    private static readonly HashSet<string> _loading = [];
+    private static readonly Dictionary<string, Map> _moduleCache = [];
 
     public static void Init(string path)
     {
@@ -51,16 +63,41 @@ public static class Global
             var attr = type.GetCustomAttribute<BuiltinTypeAttribute>()!;
             Obj instance = (Obj)Activator.CreateInstance(type)!;
             
-            originalClasses.Add(attr.Name, CreateMethod(type));
+            originalClasses[attr.Name] = CreateMethod(type);
             classes.Set(attr.Name, instance);
         }
     }
 
     public static void Include(string name, string? moduleAlias = null, IReadOnlyList<(string Name, string Alias)>? imports = null)
     {
+        if (!IsAllowed(name))
+            throw new Panic($"module '{name}' is not allowed in this environment");
+
         var map = BuildNativeMap(name);
 
         ImportMap(map, name, name, moduleAlias, imports);
+    }
+
+    public static void Import(string[] path, Source currentSource, string? moduleAlias = null, IReadOnlyList<(string Name, string Alias)>? imports = null)
+    {
+        string fullPath;
+        var currentDir = Path.GetDirectoryName(currentSource.Path);
+        if (currentDir != null)
+        {
+            var rel = Path.Combine(currentDir, Path.Combine(path));
+            if (File.Exists(rel + ".un") || File.Exists(Path.Combine(rel, "mod.un")) || Directory.Exists(rel))
+                fullPath = rel;
+            else
+                fullPath = Path.Combine(PATH, Path.Combine(path));
+        }
+        else
+        {
+            fullPath = Path.Combine(PATH, Path.Combine(path));
+        }
+
+        var map = Load(fullPath);
+
+        ImportMap(map, string.Join('.', path), path[^1], moduleAlias, imports);
     }
 
     public static void Import(string[] path, string? moduleAlias = null, IReadOnlyList<(string Name, string Alias)>? imports = null)
@@ -79,7 +116,22 @@ public static class Global
             if (moduleAlias != null)
             {
                 if (scope.ContainsKey(moduleAlias))
-                    throw new Panic($"'{moduleAlias}' already exists in the global scope");
+                {
+                    var existingModule = new Obj(UnType.Create(moduleAlias));
+                    foreach (var (name, alias) in imports)
+                    {
+                        if (name == Wildcard)
+                        {
+                            foreach (var (k, v) in map) existingModule.Members[k] = v;
+                            continue;
+                        }
+                        if (!map.TryGetValue(name, out var value))
+                            throw new Panic($"module '{moduleName}' has no member '{name}'");
+                        existingModule.Members[alias] = value;
+                    }
+                    scope.Set(moduleAlias, existingModule);
+                    return;
+                }
 
                 var module = new Obj(UnType.Create(moduleAlias));
 
@@ -113,9 +165,6 @@ public static class Global
                 {
                     foreach (var (k, v) in map)
                     {
-                        if (scope.ContainsKey(k))
-                            throw new Panic($"'{k}' already exists in the global scope");
-
                         scope.Set(k, v);
                     }
 
@@ -124,9 +173,6 @@ public static class Global
 
                 if (!map.TryGetValue(name, out var value))
                     throw new Panic($"module '{moduleName}' has no member '{name}'");
-
-                if (scope.ContainsKey(alias))
-                    throw new Panic($"'{alias}' already exists in the global scope");
 
                 scope.Set(alias, value);
             }
@@ -137,7 +183,13 @@ public static class Global
         var objectName = moduleAlias ?? moduleObjectName;
 
         if (scope.ContainsKey(objectName))
-            throw new Panic($"'{objectName}' already exists in the global scope");
+        {
+            scope.Set(objectName, new Obj(UnType.Create(objectName))
+            {
+                Members = new(map)
+            });
+            return;
+        }
 
         scope.Set(objectName, new Obj(UnType.Create(objectName))
         {
@@ -152,10 +204,11 @@ public static class Global
         foreach (var _class in type.GetCustomAttribute<NativeModuleAttribute>()!.Types)
         {
             var className = _class.GetCustomAttribute<NativeTypeAttribute>()!.Name!;
+            if (originalClasses.ContainsKey(className)) continue;
             if (natives.TryGetValue(className, out var t))
-                originalClasses.Add(className, BuildNativeMap(className));
+                originalClasses[className] = BuildNativeMap(className);
             else
-                originalClasses.Add(className, CreateMethod(_class));
+                originalClasses[className] = CreateMethod(_class);
         }
 
         return CreateMethod(type);
@@ -163,48 +216,66 @@ public static class Global
 
     private static Map Load(string fullPath)
     {
-        Map map = [];
+        var cacheKey = Path.GetFullPath(fullPath);
 
-        var filePath = fullPath.EndsWith(".un") ? fullPath : fullPath + ".un";
+        if (_moduleCache.TryGetValue(cacheKey, out var cached))
+            return cached.New();
 
-        if (File.Exists(filePath))
+        if (!_loading.Add(cacheKey))
+            throw new Panic($"circular import detected: '{fullPath}'");
+
+        try
         {
-            LoadFile(filePath);
-            return map;
-        }
-  
-        if (Directory.Exists(fullPath))
-        {
-            var mod = Path.Combine(fullPath, "mod.un");
+            Map map = [];
 
-            if (File.Exists(mod))
+            var filePath = fullPath.EndsWith(".un") ? fullPath : fullPath + ".un";
+
+            if (FileSystem.FileExists(filePath))
             {
-                LoadFile(mod);
+                LoadFile(filePath);
+                _moduleCache[cacheKey] = map.New();
+                return map;
+            }
+      
+            if (FileSystem.DirectoryExists(fullPath))
+            {
+                var mod = Path.Combine(fullPath, "mod.un");
+
+                if (FileSystem.FileExists(mod))
+                {
+                    LoadFile(mod);
+                    _moduleCache[cacheKey] = map.New();
+                    return map;
+                }
+
+                foreach (var file in FileSystem.GetFiles(fullPath, "*.un"))
+                    LoadFile(file);
+
+                _moduleCache[cacheKey] = map.New();
                 return map;
             }
 
-            foreach (var file in Directory.GetFiles(fullPath, "*.un"))
-                LoadFile(file);
+            throw new Panic($"module '{fullPath}' not found");
 
-            return map;
-        }
-
-        throw new Panic($"module '{fullPath}' not found");
-
-        void LoadFile(string file)
-        {
-            var inner = new Scope(GetGlobalScope());
-
-            Runner.Load(file, inner).Run();
-
-            var symbols = inner.GetSymbolTable();
-            var slots = inner.GetSlots();
-
-            foreach (var (key, index) in symbols)
+            void LoadFile(string file)
             {
-                if (slots[index] is Obj obj)
-                    map[key] = obj;
+                var inner = new Scope(GetGlobalScope());
+
+                Runner.Load(file, inner).Run();
+
+                var symbols = inner.GetSymbolTable();
+                var slots = inner.GetSlots();
+
+                foreach (var (key, index) in symbols)
+                {
+                    if (slots[index] is Obj obj)
+                        map[key] = obj;
+                }
             }
+        }
+        finally
+        {
+            _loading.Remove(cacheKey);
         }
     }
 
@@ -227,7 +298,19 @@ public static class Global
                     var values = new object?[parameters.Length];
 
                     for (int i = 0; i < parameters.Length; i++)
-                        values[i] = args[parameters[i].Name!];
+                    {
+                        var p = parameters[i];
+                        if (p.GetCustomAttribute<SelfAttribute>() is not null)
+                        {
+                            values[i] = args["self"];
+                            continue;
+                        }
+                        var info = p.GetCustomAttribute<ArgInfoAttribute>();
+                        var argName = info?.Name ?? p.Name!;
+                        values[i] = args[argName];
+                        if (values[i] is Err)
+                            values[i] = args[p.Name!];
+                    }
 
                     return (Obj)method.Invoke(null, values)!;
                 }
@@ -240,7 +323,7 @@ public static class Global
 
                 var info = parameter.GetCustomAttribute<ArgInfoAttribute>();
 
-                fn.Args.Add(new Arg(parameter.Name!)
+                fn.Args.Add(new Arg(info?.Name ?? parameter.Name!)
                 {
                     IsEssential = info?.Essential ?? false,
                     IsOptional = info?.Optional ?? false,
@@ -311,6 +394,73 @@ public static class Global
 
         value = null!;
         return false;
+    }
+
+    public static bool TryGetOriginalClass(string typeName, out Attributes? attrs)
+    {
+        if (originalClasses.TryGetValue(typeName, out var original))
+        {
+            attrs = original;
+            return true;
+        }
+
+        attrs = null;
+        return false;
+    }
+
+    public static IEnumerable<string> GetAllAttrKeys(Obj value)
+    {
+        var seen = new HashSet<string>();
+
+        foreach (var key in value.Members.Keys)
+            if (seen.Add(key))
+                yield return key;
+
+        if (TryGetOriginalClass(value.Type.Name, out var orig) && orig is not null)
+            foreach (var key in orig.Keys)
+                if (seen.Add(key))
+                    yield return key;
+
+        var super = value.Super;
+        while (super is not null && !super.IsNone())
+        {
+            foreach (var key in super.Members.Keys)
+                if (seen.Add(key))
+                    yield return key;
+            super = super.Super;
+        }
+    }
+
+    public static bool HasAttrDeep(Obj value, string name)
+    {
+        if (value.Members.ContainsKey(name))
+            return true;
+        if (TryGetOriginalValue(value.Type.Name, name, out _))
+            return true;
+        var super = value.Super;
+        while (super is not null && !super.IsNone())
+        {
+            if (super.Members.ContainsKey(name))
+                return true;
+            super = super.Super;
+        }
+        return false;
+    }
+
+    public static Obj GetAttrDeep(Obj value, string name)
+    {
+        if (value.Members.TryGetValue(name, out var v))
+            return v;
+        if (TryGetOriginalValue(value.Type.Name, name, out v) && v is not null)
+            return v;
+        var super = value.Super;
+        while (super is not null && !super.IsNone())
+        {
+            if (super.Members.TryGetValue(name, out v))
+                return v;
+            super = super.Super;
+        }
+        return new Err($"'{value.Type}' object has no attribute '{name}'");
     }
 
     public static Obj GetGlobalVariable(string name) => scope.Get(name, out var value) ? value : new Err($"global variable '{name}' not found");

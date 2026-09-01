@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Un.Object.Collections;
 using Un.Object.Iter;
 using Un.Object.Type;
@@ -5,11 +6,14 @@ using Un.Reflection;
 
 namespace Un.Object.Primitive;
 
-[BuiltinType("str")]
+[BuiltinType("str", Description = "Immutable UTF-8 string with interning and rich text operations.", Example = "text = \"hello, world\"\ntext.split(\", \")\ntext.to_upper()")]
 public class Str : Ref<string>
 {
+    private const int MAX_POOL_SIZE = 10000;
+    private const int MAX_POOLED_STRING_LEGNTH = 1000;
+
     public static readonly Str Empty = new();
-    private static Dictionary<string, Str> pool = [];
+    private static ConcurrentDictionary<string, Str> pool = [];
 
     public Str() : this("") { }
 
@@ -117,18 +121,12 @@ public class Str : Ref<string>
 
     public static Str From(string value)
     {
-        if (value == null) return Empty;
-
-        if (value.Length > 32)
+        if (value.Length > MAX_POOLED_STRING_LEGNTH)
             return new Str(value);
+        if (pool.Count >= MAX_POOL_SIZE)
+            pool.Clear();
 
-        if (pool.TryGetValue(value, out var cached))
-            return cached;
-
-        var result = new Str(value);
-        pool[value] = result;
-
-        return result;
+        return pool.GetOrAdd(value, static v => new Str(v));
     }
 
     public static Str From(string value, bool intern)
@@ -399,8 +397,8 @@ public class Str : Ref<string>
     )]
     public static Obj Replace(
        [Self] Str self,
-       [ArgInfo(Essential = true)] Obj oldValue,
-       [ArgInfo(Optional = true)] Obj newValue)
+       [ArgInfo(Essential = true, Name = "old_value")] Obj oldValue,
+       [ArgInfo(Optional = true, Name = "new_value")] Obj newValue)
     {
         if (!oldValue.As<Str>(out var oldStr))
             return new Err("invalid argument: old_value");
@@ -417,7 +415,7 @@ public class Str : Ref<string>
         ReturnType = "int",
         ArgumentTypes = new[] { "any" }
     )]
-    public static Obj Find([Self] Str self, [ArgInfo(Essential = true)] Obj subStr)
+    public static Obj Find([Self] Str self, [ArgInfo(Essential = true, Name = "sub_str")] Obj subStr)
     {
         if (!subStr.As<Str>(out var subStrValue))
             return new Err("invalid argument: sub_str");

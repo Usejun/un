@@ -62,6 +62,31 @@ public class Scope(Scope? parentScope = null)
         slots.Add(value);
     }
 
+    // 함수 바디 등에서: 현재 스코프에 없으면 로컬 생성, 있으면 현재 스코프만 수정
+    public void SetLocalOrDeclare(string key, Obj value)
+    {
+        if (symbols.TryGetValue(key, out var idx))
+        {
+            slots[idx] = value;
+            return;
+        }
+
+        symbols[key] = slots.Count;
+        slots.Add(value);
+    }
+
+    public void SetLocal(string key, Obj value)
+    {
+        if (symbols.TryGetValue(key, out var idx))
+        {
+            slots[idx] = value;
+            return;
+        }
+
+        symbols[key] = slots.Count;
+        slots.Add(value);
+    }
+
     public bool ContainsKey(string key)
     {
         if (symbols.ContainsKey(key))

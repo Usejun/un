@@ -123,6 +123,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         TokenType.Defer or
         TokenType.Break or
         TokenType.Skip or
+        TokenType.Wait or
         TokenType.Return => true,
 
         _ => false
@@ -515,7 +516,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         {
             var expr = ParseExpression();
 
-            body = new Node(expr.Start, expr.Length, expr.Kind, children: [expr]);
+            body = new Node(expr.Start, expr.Length, NodeKind.Block, children: [expr]);
         }
 
         return new Node(keyword.Start, GetLength(keyword, body), NodeKind.Defer, children: [body]);
@@ -1124,7 +1125,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
         if (Match(TokenType.Colon))
         {
-            var type = ParseIdentifier();
+            var type = ParseType();
 
             value = new Node(value.Start, type.Start + type.Length - value.Start, NodeKind.Typed, children: [value, type]);
         }
@@ -1137,6 +1138,43 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
         }
 
         return new Node(value.Start, value.Length, NodeKind.Parameter, children: [value]);
+    }
+
+    private Node ParseType()
+    {
+        var start = Current.Start;
+        var type = ParseIdentifier();
+
+        if (Match(TokenType.LBrack))
+        {
+            var innerStart = type.Start;
+            if (Current.Type != TokenType.RBrack)
+            {
+                ParseType();
+                while (Match(TokenType.Comma))
+                    ParseType();
+            }
+            var rbrack = Expect(TokenType.RBrack, "expected ']' after type parameters");
+            var length = GetLength(type, rbrack);
+            type = new Node(innerStart, length, NodeKind.Identifier)
+            {
+                Value = code.Substring(innerStart, length)
+            };
+            start = innerStart;
+        }
+
+        while (Match(TokenType.BOr))
+        {
+            var right = ParseType();
+            var length = GetLength(type, right);
+            var combinedStart = type.Start;
+            type = new Node(combinedStart, length, NodeKind.Identifier)
+            {
+                Value = code.Substring(combinedStart, length)
+            };
+        }
+
+        return type;
     }
 
     private Node ParseBlock()
@@ -1197,7 +1235,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
         if (Match(TokenType.Colon))
         {
-            var type = ParseExpression();
+            var type = ParseType();
             return new Node(expr.Start, GetLength(expr, type), NodeKind.Typed, children: [expr, type]);
         }
 

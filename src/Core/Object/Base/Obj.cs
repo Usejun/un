@@ -183,10 +183,11 @@ public class Obj(UnType type) : IComparable<Obj>
             return value;
         if (ValidSuper())
             Super.SetAttr(name, value);
-        if (Members.ContainsKey(name))
-            return Members[name] = value;
 
-        return new Err($"'{Type}' object has no attribute '{name}'");
+        if (Type.Name is "int" or "float" or "str" or "bool" or "date" or "none" or "null")
+            return new Err($"'{Type}' object has no attribute '{name}'");
+
+        return Members[name] = value;
     }
 
     public virtual Obj GetAttr(string name)

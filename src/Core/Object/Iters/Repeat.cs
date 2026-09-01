@@ -24,7 +24,7 @@ public class Repeat : Iters
         { Count: 1 } and [Tup tup] => new Repeat(tup, -1),
         { Count: 2 } and [List list, Int i] => new Repeat(list.Value, i.Value),
         { Count: 2 } and [Tup tup, Int i] => new Repeat(tup.Value, i.Value),
-        _ => new Err($"invaild '{Type}' initialize"),
+        _ => new Err($"invalid '{Type}' initialize"),
     };
 
     public override Int Len() => Int.From(source.LongCount() * count);

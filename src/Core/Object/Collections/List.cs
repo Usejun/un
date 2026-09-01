@@ -7,7 +7,7 @@ using Un.Reflection;
 
 namespace Un.Object.Collections;
 
-[BuiltinType("list")]
+[BuiltinType("list", Description = "Dynamic resizable array with heap and search operations.", Example = "l = [1, 2, 3]\nl.push(4)\nio.write(l)")]
 public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj>
 {
     public struct Enumerator(List list) : IEnumerator<Obj>
@@ -471,10 +471,18 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         ReturnType = "any",
         ArgumentTypes = new[] { "any" }
     )]
-    public static Obj Pop([Self] List self, [ArgInfo(Essential = true)] Obj index)
+    public static Obj Pop([Self] List self, [ArgInfo(Essential = true)] Obj? index = null)
     {
+        index ??= Int.From(self.Count - 1);
+
         if (!index.As<Int>(out var idx))
             return new Err("invalid argumnets: index");
+
+        if (idx.Value < 0)
+            idx = Int.From(idx.Value + self.Count);
+
+        if (OutOfRange(self, (int)idx.Value))
+            return new Err("list index out of range");
 
         Obj value = self[(int)idx.Value];
         RemoveAt(self, index);

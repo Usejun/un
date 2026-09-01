@@ -12,5 +12,7 @@ class point: number
         self.y = y
         self.z = z
 
+use io
+
 p1: point = point(55, 2, 348)
-write(p1)
+io.write(p1)
