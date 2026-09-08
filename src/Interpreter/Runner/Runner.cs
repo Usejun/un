@@ -37,6 +37,11 @@ public sealed class Runner(Context context, Context? parentContext = null)
 
             return evaluator.Eval(optimization.Root);
         }
+        catch (PropagateFlow pf)
+        {
+            var err = pf.Error as Err;
+            throw new Error(err?.Message ?? "propagated error", pf.Start, pf.Length, Context.Source, header: err?.Header ?? "error");
+        }
         catch (BreakFlow bf)
         {
             throw new Error("'break' outside loop", bf.Start, bf.Length, Context.Source);

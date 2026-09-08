@@ -22,3 +22,10 @@ public class SkipFlow(int start, int length) : Flows
     public int Start => start;
     public int Length => length;
 }
+
+public class PropagateFlow(Obj error, int start, int length) : Flows
+{
+    public int Start => start;
+    public int Length => length;
+    public Obj Error => error;
+}

@@ -1,4 +1,5 @@
 using System.Runtime.Remoting;
+using System.Xml.Linq;
 using Un.Object.Collections;
 using Un.Object.Primitive;
 using Un.Object.Type;
@@ -157,25 +158,15 @@ public class Obj(UnType type) : IComparable<Obj>
         return Bool.From(!ltValue.Value);
     });
 
-    public virtual Obj Slicer(Int to, Int from, Int step)
+    public virtual Obj Slice(Obj? start, Obj? end, Obj? step)
     {
-        List list = [];
-        long a = to.Value;
-        long b = from.Value;
+        if (TryMethod("__slice__", out var value, new([start ?? None, end ?? None, step ?? None], ["start", "end", "step"])))
+            return value;
+        if (ValidSuper())
+            Super.Slice(start, end, step);
 
-        if (b == -1 && Len().As<Int>(out var len))        
-            b = len.Value;        
-        else 
-            return new Err($"unsupported operand type(s) for slice: '{Type}'");
-
-        do
-        {
-            List.Append(list, Int.From(a));
-            a += step.Value;
-        } while (a < b);
-
-        return list;
-    }
+        return new Err($"unsupported slice for '{Type}'");
+    }    
 
     public virtual Obj SetAttr(string name, Obj value)
     {

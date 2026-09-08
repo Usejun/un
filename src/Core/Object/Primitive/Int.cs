@@ -17,8 +17,41 @@ public class Int : Val<long>
     {
         { Count: 0 } => From(0),
         { Count: 1 } => args[0].ToInt(),
+        { Count: 2 } when args[0] is Str s && args[1] is Int b => ParseWithBase(s, b),
+        { Count: 2 } => new Err($"int: expected (str, int) for base conversion"),
         _ => new Err($"cannot convert to '{Type}'"),
     };
+
+    private static Obj ParseWithBase(Str s, Int b)
+    {
+        var text = s.Value.Trim();
+        var @base = (int)b.Value;
+        if (@base < 2 || @base > 36)
+            return new Err("int: base must be between 2 and 36");
+
+        if (text.StartsWith("0b", StringComparison.OrdinalIgnoreCase) && @base == 2) text = text[2..];
+        else if (text.StartsWith("0o", StringComparison.OrdinalIgnoreCase) && @base == 8) text = text[2..];
+        else if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && @base == 16) text = text[2..];
+
+        var sign = 1;
+        if (text.StartsWith('-')) 
+        {   
+            sign = -1; 
+            text = text[1..]; 
+        }
+        else if (text.StartsWith('+')) text = text[1..];
+
+        if (text.Length == 0) return new Err($"int: invalid literal for base {@base}");
+
+        try 
+        { 
+            return From(sign * Convert.ToInt64(text, @base)); 
+        }
+        catch (Exception e) 
+        { 
+            return new Err($"int: {e.Message}"); 
+        }
+    }
 
     public override Obj Add(Obj other) => other switch
     {
@@ -65,10 +98,27 @@ public class Int : Val<long>
 
     public override Obj Pow(Obj other) => other switch
     {
-        Int i => From((long)Math.Pow(Value, i.Value)),
-        Float f => new Float(Math.Pow(Value, f.Value)),
+        Int i => PowInt(i.Value),
+        Float f => PowFloat(f.Value),
         _ => new Err($"unsupported operand type(s) for **: 'int' and '{other.Type}'")
     };
+
+    private Obj PowInt(long exp)
+    {
+        if (exp < 0) return new Err($"int pow: negative exponent {exp}");
+        var d = Math.Pow(Value, exp);
+        if (double.IsInfinity(d) || double.IsNaN(d) || d > long.MaxValue || d < long.MinValue)
+            return new Err($"int pow overflow: {Value} ** {exp}");
+        return From((long)d);
+    }
+
+    private Obj PowFloat(double exp)
+    {
+        var d = Math.Pow(Value, exp);
+        if (double.IsInfinity(d) || double.IsNaN(d))
+            return new Err($"int pow overflow: {Value} ** {exp}");
+        return new Float(d);
+    }
 
     public override Int Neg() => From(-Value);
 

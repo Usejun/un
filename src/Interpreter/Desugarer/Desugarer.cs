@@ -6,6 +6,7 @@ public sealed class Desugarer
 
     private Node Visit(Node node)
     {
+        if (node == null) return null!;
         return node.Kind switch
         {
             NodeKind.Block => DesugarBlock(node),
@@ -27,10 +28,12 @@ public sealed class Desugarer
 
         for (int i = 0; i < node.Children.Count; i++)
         {
-            var c = Visit(node.Children[i]);
+            var child = node.Children[i];
+            if (child == null) continue;
+            var c = Visit(child);
             newChildren[i] = c;
 
-            if (!ReferenceEquals(c, node.Children[i]))
+            if (!ReferenceEquals(c, child))
                 changed = true;
         }
 

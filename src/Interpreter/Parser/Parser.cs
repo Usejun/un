@@ -668,6 +668,13 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
                 case TokenType.LBrack:
                     expr = ParseIndexOrSlice(expr);
                     continue;
+
+                case TokenType.Question:
+                    {
+                        var q = Next();
+                        expr = new Node(expr.Start, q.Start + q.Length - expr.Start, NodeKind.Unary, TokenType.Question, expr);
+                        continue;
+                    }
             }
 
             break;
@@ -907,7 +914,21 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
 
         long ParseInteger(string text)
         {
-            if (long.TryParse(text.Replace("_", ""), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            var t = text.Replace("_", "");
+            if (t.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                if (long.TryParse(t[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var hv)) return hv;
+                throw new Error("integer literal is too large", token.Start, token.Length, source);
+            }
+            if (t.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
+            {
+                try { return Convert.ToInt64(t[2..], 2); } catch { throw new Error("integer literal is too large", token.Start, token.Length, source); }
+            }
+            if (t.StartsWith("0o", StringComparison.OrdinalIgnoreCase))
+            {
+                try { return Convert.ToInt64(t[2..], 8); } catch { throw new Error("integer literal is too large", token.Start, token.Length, source); }
+            }
+            if (long.TryParse(t, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
                 return value;
 
             throw new Error("integer literal is too large", token.Start, token.Length, source);
@@ -1347,6 +1368,7 @@ public sealed class Parser(IReadOnlyList<Token> tokens, Context context)
             NodeKind.Identifier => true,
             NodeKind.Property => true,
             NodeKind.Index => true,
+            NodeKind.Slice => true,
             NodeKind.Wildcard => true,
             NodeKind.Typed => IsValidAssignmentTarget(node.Children[0]),
             NodeKind.Tuple => node.Children.All(IsValidAssignmentTarget),

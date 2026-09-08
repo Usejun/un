@@ -77,10 +77,40 @@ public class Str : Ref<string>
 
     public override Obj GetItem(Obj other) => other switch
     {
-        Int i => OutOfRange((int)i.Value) ? OutOfRange((int)(i.Value + Value.Length)) ? new Err("list index out of range") :
-        Str.From($"{this[(int)(i.Value + Value.Length)]}") : Str.From($"{this[(int)i.Value]}"),
+        Int i => OutOfRange((int)i.Value) ? OutOfRange((int)(i.Value + Value.Length)) ? new Err("list index out of range") : Str.From($"{this[(int)(i.Value + Value.Length)]}") : Str.From($"{this[(int)i.Value]}"),
         _ => new Err("invalid index type"),
     };
+
+    public override Obj Slice(Obj? start, Obj? end, Obj? step)
+    {
+        int len = Value.Length;
+        int s = 0, e = len, st = 1;
+        if (start != null)
+        {
+            if (!start.As<Int>(out var sInt)) return new Err("slice start must be int");
+            s = (int)sInt.Value; if (s < 0) s += len; s = Math.Clamp(s, 0, len);
+        }
+        if (end != null)
+        {
+            if (!end.As<Int>(out var eInt)) return new Err("slice end must be int");
+            e = (int)eInt.Value; if (e < 0) e += len; e = Math.Clamp(e, 0, len);
+        }
+        if (step != null)
+        {
+            if (!step.As<Int>(out var stInt)) return new Err("slice step must be int");
+            st = (int)stInt.Value; if (st == 0) return new Err("slice step cannot be zero");
+        }
+        if (st == 1)
+        {
+            if (e < s) e = s;
+            return From(Value.Substring(s, Math.Max(0, e - s)));
+        }
+        var sb = new System.Text.StringBuilder();
+        if (st > 0) { for (int i = s; i < e; i += st) sb.Append(Value[i]); }
+        else { for (int i = s; i > e; i += st) sb.Append(Value[i]); }
+
+        return From(sb.ToString());
+    }
 
     public override Int Len() => Int.From(Value.Length);
 
@@ -91,6 +121,8 @@ public class Str : Ref<string>
     public override Str ToStr() => this;
 
     public override Bool ToBool() => bool.TryParse(Value, out var result) ? result ? Bool.True : Bool.False : string.IsNullOrEmpty(Value) ? Bool.False : Bool.True;
+
+    public override Iters Iter() => new(Value.Select(c => From($"{c}")));
 
     public override List ToList()
     {
@@ -104,7 +136,7 @@ public class Str : Ref<string>
 
     private bool OutOfRange(int value)
     {
-        if (Value.Length <= value)
+        if (0 > value || value >= Value.Length)
             return true;
         return false;
     }

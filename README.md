@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://unlangplay-8i2jhcwv.manus.space/"><b>▶ Playground에서 바로 실행하기</b></a> ·
+  <a href="https://un-playground.vercel.app/"><b>▶ Playground에서 바로 실행하기</b></a> ·
   <a href="#빠른-시작">Quick Start</a> ·
   <a href="#언어-가이드">Language Guide</a> ·
   <a href="#표준-라이브러리">Stdlib</a>
@@ -87,7 +87,7 @@ dotnet run -c Release -- run test/test_all.un
 
 **Playground** (설치 없이 브라우저에서 실행)
 
-> **[Un Playground](https://unlangplay-8i2jhcwv.manus.space/)**
+> **[Un Playground](https://un-playground.vercel.app/)**
 
 ---
 
@@ -397,5 +397,5 @@ dotnet run -c Release -- run test/test_verify_typed_var.un
 MIT License — 자유롭게 사용·수정·배포할 수 있습니다.
 
 <p align="center">
-  Made with C# & .NET 8 · <a href="https://unlangplay-8i2jhcwv.manus.space/">Playground</a>
+  Made with C# & .NET 8 · <a href="https://un-playground.vercel.app/">Playground</a>
 </p>

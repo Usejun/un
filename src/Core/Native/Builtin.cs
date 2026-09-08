@@ -69,4 +69,84 @@ public static class Builtin
 
         return new Err(messageValue.Value, nameValue.Value);
     }
+
+    [Native(
+        Name = "chr",
+        Description = "Converts an ASCII/Unicode code point to a single-character string.",
+        Example = "chr(65) // \"A\"",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "int" }
+    )]
+    public static Obj Chr([ArgInfo(Essential = true)] Obj code)
+    {
+        if (!code.As<Int>(out var i))
+            return new Err("chr: expected int code");
+        if (i.Value < 0 || i.Value > 0x10FFFF)
+            return new Err("chr: code point out of range (0..1114111)");
+        return Str.From(char.ConvertFromUtf32((int)i.Value));
+    }
+
+    [Native(
+        Name = "ord",
+        Description = "Converts a single-character string to its ASCII/Unicode code point.",
+        Example = "ord(\"A\") // 65",
+        ReturnType = "int",
+        ArgumentTypes = new[] { "str" }
+    )]
+    public static Obj Ord([ArgInfo(Essential = true)] Obj ch)
+    {
+        if (!ch.As<Str>(out var s))
+            return new Err("ord: expected str");
+        if (s.Value.Length == 0)
+            return new Err("ord: expected a single character, got empty string");
+        return Int.From(char.ConvertToUtf32(s.Value, 0));
+    }
+
+    [Native(
+        Name = "bin",
+        Description = "Converts an integer to a binary string with '0b' prefix.",
+        Example = "bin(10) // \"0b1010\"",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "int" }
+    )]
+    public static Obj Bin([ArgInfo(Essential = true)] Obj value)
+    {
+        if (!value.As<Int>(out var i))
+            return new Err("bin: expected int");
+        var v = i.Value;
+        if (v < 0) return Str.From("-0b" + Convert.ToString(-v, 2));
+        return Str.From("0b" + Convert.ToString(v, 2));
+    }
+
+    [Native(
+        Name = "oct",
+        Description = "Converts an integer to an octal string with '0o' prefix.",
+        Example = "oct(10) // \"0o12\"",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "int" }
+    )]
+    public static Obj Oct([ArgInfo(Essential = true)] Obj value)
+    {
+        if (!value.As<Int>(out var i))
+            return new Err("oct: expected int");
+        var v = i.Value;
+        if (v < 0) return Str.From("-0o" + Convert.ToString(-v, 8));
+        return Str.From("0o" + Convert.ToString(v, 8));
+    }
+
+    [Native(
+        Name = "hex",
+        Description = "Converts an integer to a hexadecimal string with '0x' prefix.",
+        Example = "hex(255) // \"0xff\"",
+        ReturnType = "str",
+        ArgumentTypes = new[] { "int" }
+    )]
+    public static Obj Hex([ArgInfo(Essential = true)] Obj value)
+    {
+        if (!value.As<Int>(out var i))
+            return new Err("hex: expected int");
+        var v = i.Value;
+        if (v < 0) return Str.From("-0x" + (-v).ToString("x"));
+        return Str.From("0x" + v.ToString("x"));
+    }
 }

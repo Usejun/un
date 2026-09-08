@@ -4,7 +4,7 @@ using Un.Reflection;
 
 namespace Un.Object.IO;
 
-[NativeType(Name = "stream")]
+[NativeType("stream", Description = "Stream for file I/O operations.", Example = "using file = io.open(\"test.md\", \"w\")\nfile.write(\"hi\")")]
 public class Stream : Ref<System.IO.Stream>, IDisposable
 {
     public StreamReader? Reader { get; }

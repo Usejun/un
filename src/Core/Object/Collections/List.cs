@@ -73,6 +73,41 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
         _ => new Err("invalid index type")
     };
 
+    public override Obj Slice(Obj? start, Obj? end, Obj? step)
+    {
+        int len = Count;
+        int s = 0, e = len, st = 1;
+        if (start != null)
+        {
+            if (!start.As<Int>(out var sInt)) return new Err("slice start must be int");
+            s = (int)sInt.Value; if (s < 0) s += len; s = Math.Clamp(s, 0, len);
+        }
+        if (end != null)
+        {
+            if (!end.As<Int>(out var eInt)) return new Err("slice end must be int");
+            e = (int)eInt.Value; if (e < 0) e += len; e = Math.Clamp(e, 0, len);
+        }
+        if (step != null)
+        {
+            if (!step.As<Int>(out var stInt)) return new Err("slice step must be int");
+            st = (int)stInt.Value; if (st == 0) return new Err("slice step cannot be zero");
+        }
+        var newList = new List();
+        if (st == 1) {
+            int count = e - s;
+            if (count > 0) {
+                var slice = new Obj[count];
+                Array.Copy(Value, s, slice, 0, count);
+                newList = new List(slice);
+            }
+        } else if (st > 0) {
+            for (int i = s; i < e; i += st) newList.Add(this[i]);
+        } else {
+            for (int i = s; i > e; i += st) newList.Add(this[i]);
+        }
+        return newList;
+    }
+
     public override Obj SetItem(Obj key, Obj value)
     {
         if (key is not Int i)
@@ -164,8 +199,17 @@ public class List(Obj[] value) : Ref<Obj[]>(value, UnType.List), IEnumerable<Obj
     {
         if (value.Iter().As<Iters>(out var iters))
         {
-            foreach (var v in iters.Value)
-                Append(self, v);
+            if (ReferenceEquals(value, self))
+            {
+                var snapshot = self.ToList();
+                foreach (var v in snapshot)
+                    Append(self, v);
+            }
+            else
+            {
+                foreach (var v in iters.Value)
+                    Append(self, v);
+            }
         }
         else
         {

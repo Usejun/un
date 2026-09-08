@@ -128,7 +128,6 @@ public static class IO
 
         cw?.Flush();
 
-        // Browser: no stdin data → prompt synchronously (그때그때 입력)
         if (OperatingSystem.IsBrowser() && cr != null && cr.Peek() == -1 && BrowserPromptHandler != null)
         {
             try

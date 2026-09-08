@@ -66,6 +66,15 @@ public static class Global
             originalClasses[attr.Name] = CreateMethod(type);
             classes.Set(attr.Name, instance);
         }
+
+        var nativeTypes = Assembly.GetExecutingAssembly().GetTypes()!.Where(t => t.GetCustomAttribute<NativeTypeAttribute>() is not null);
+
+        foreach (var type in nativeTypes)
+        {
+            var attr = type.GetCustomAttribute<NativeTypeAttribute>()!;
+            if (!originalClasses.ContainsKey(attr.Name))
+                originalClasses[attr.Name] = CreateMethod(type);
+        }
     }
 
     public static void Include(string name, string? moduleAlias = null, IReadOnlyList<(string Name, string Alias)>? imports = null)

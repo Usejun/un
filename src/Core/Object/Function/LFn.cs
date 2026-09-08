@@ -28,6 +28,10 @@ public class LFn(List<Node> body, Context closure) : Fn(closure)
             foreach (Node node in body)
                 evaluator.Eval(node);
         }
+        catch (PropagateFlow pf)
+        {
+            return pf.Error;
+        }
         catch (ReturnFlow rf)
         {
             return rf.Value;

@@ -50,7 +50,7 @@ public static class Iter
     }
 
     [Native(
-        Name = "iter",
+        Name = "array",
         Description = "Creates an iterator from a value.",
         Example = "items = iter(values)",
         ReturnType = "list",
@@ -84,7 +84,7 @@ public static class Iter
             List list = [];
 
             for (int i = 0; i < lengths[0]; i++)
-                list.Append(lengths.Length == 1 ? value.Clone() : Create(lengths[1..]));
+                List.Append(list, lengths.Length == 1 ? value.Clone() : Create(lengths[1..]));
 
             return list;
         }

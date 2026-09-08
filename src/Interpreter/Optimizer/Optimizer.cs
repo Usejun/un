@@ -213,13 +213,13 @@ public static class Optimizer
     {
         return op switch
         {
-            TokenType.Plus => a + b,
-            TokenType.Minus => a - b,
-            TokenType.Asterisk => a * b,
-            TokenType.Slash => a / b,
-            TokenType.DoubleSlash => a / b,
-            TokenType.Percent => a % b,
-            TokenType.DoubleAsterisk => (long)Math.Pow(a, b),
+            TokenType.Plus => checked(a + b),
+            TokenType.Minus => checked(a - b),
+            TokenType.Asterisk => checked(a * b),
+            TokenType.Slash => b == 0 ? throw new Panic("division by zero") : a / b,
+            TokenType.DoubleSlash => b == 0 ? throw new Panic("division by zero") : a / b,
+            TokenType.Percent => b == 0 ? throw new Panic("division by zero") : a % b,
+            TokenType.DoubleAsterisk => EvalPowLong(a, b),
 
             TokenType.Equal => a == b,
             TokenType.Unequal => a != b,
@@ -233,6 +233,15 @@ public static class Optimizer
         };
     }
 
+    private static long EvalPowLong(long a, long b)
+    {
+        if (b < 0) throw new Panic("negative exponent for int pow");
+        var d = Math.Pow(a, b);
+        if (double.IsInfinity(d) || double.IsNaN(d) || d > long.MaxValue || d < long.MinValue)
+            throw new Panic($"integer pow overflow: {a} ** {b}");
+        return (long)d;
+    }
+
     private static object EvalDouble(TokenType op, double a, double b)
     {
         return op switch
@@ -241,9 +250,9 @@ public static class Optimizer
             TokenType.Minus => a - b,
             TokenType.Asterisk => a * b,
             TokenType.Slash => a / b,
-            TokenType.DoubleSlash => (long)(a / b),
-            TokenType.Percent => a % b,
-            TokenType.DoubleAsterisk => Math.Pow(a, b),
+            TokenType.DoubleSlash => b == 0 ? throw new Panic("division by zero") : (long)(a / b),
+            TokenType.Percent => b == 0 ? throw new Panic("division by zero") : a % b,
+            TokenType.DoubleAsterisk => EvalPowDouble(a, b),
 
             TokenType.Equal => a == b,
             TokenType.Unequal => a != b,
@@ -255,6 +264,14 @@ public static class Optimizer
 
             _ => throw new Panic($"invalid optimize operator '{op}' for double")
         };
+    }
+
+    private static double EvalPowDouble(double a, double b)
+    {
+        var d = Math.Pow(a, b);
+        if (double.IsInfinity(d) || double.IsNaN(d))
+            throw new Panic($"float pow overflow: {a} ** {b}");
+        return d;
     }
 
     private static string Hash(Node node)

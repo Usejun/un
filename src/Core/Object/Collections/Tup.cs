@@ -103,6 +103,32 @@ public class Tup : Ref<Obj[]>, IEnumerable<Obj>
         _ => new Err("invalid index type")
     };
 
+    public override Obj Slice(Obj? start, Obj? end, Obj? step)
+    {
+        int len = Count;
+        int s = 0, e = len, st = 1;
+        if (start != null)
+        {
+            if (!start.As<Int>(out var sInt)) return new Err("slice start must be int");
+            s = (int)sInt.Value; if (s < 0) s += len; s = Math.Clamp(s, 0, len);
+        }
+        if (end != null)
+        {
+            if (!end.As<Int>(out var eInt)) return new Err("slice end must be int");
+            e = (int)eInt.Value; if (e < 0) e += len; e = Math.Clamp(e, 0, len);
+        }
+        if (step != null)
+        {
+            if (!step.As<Int>(out var stInt)) return new Err("slice step must be int");
+            st = (int)stInt.Value; if (st == 0) return new Err("slice step cannot be zero");
+        }
+        var newValues = new List<Obj>();
+        var newNames = new List<string>();
+        if (st > 0) { for (int i = s; i < e; i += st) { newValues.Add(Value[i]); newNames.Add(Name[i]); } }
+        else { for (int i = s; i > e; i += st) { newValues.Add(Value[i]); newNames.Add(Name[i]); } }
+        return new Tup([.. newValues], [.. newNames]);
+    }
+
     public override Obj In(Obj obj)
     {
         foreach (var value in Value)

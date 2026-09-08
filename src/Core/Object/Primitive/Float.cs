@@ -61,14 +61,22 @@ public class Float(double value) : Val<double>(value, UnType.Float)
 
     public override Obj Pow(Obj other) => other switch
     {
-        Int i => new Float(Math.Pow(Value, i.Value)),
-        Float f => new Float(Math.Pow(Value, f.Value)),
+        Int i => PowDouble(i.Value),
+        Float f => PowDouble(f.Value),
         _ => new Err($"unsupported operand type(s) for **: 'float' and '{other.Type}'")
     };
 
-    public override Float Neg() => new Float(-Value);
+    private Obj PowDouble(double exp)
+    {
+        var d = Math.Pow(Value, exp);
+        if (double.IsInfinity(d) || double.IsNaN(d))
+            return new Err($"float pow overflow: {Value} ** {exp}");
+        return new Float(d);
+    }
 
-    public override Float Pos() => new Float(+Value);
+    public override Float Neg() => new(-Value);
+
+    public override Float Pos() => new(+Value);
 
     public override Obj Eq(Obj other) => other switch
     {
@@ -110,7 +118,7 @@ public class Float(double value) : Val<double>(value, UnType.Float)
     public override Obj GtOrEq(Obj other) => other switch
     {
         Int i => Bool.From(Value >= i.Value),
-        Float f => Bool.From(Value >= f.Value)        ,
+        Float f => Bool.From(Value >= f.Value),
         _ => new Err($"unsupported operand type(s) for >=: 'float' and '{other.Type}'")
     };
 

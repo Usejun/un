@@ -33,6 +33,7 @@ public sealed class Evaluator(Context context)
             NodeKind.Call => EvalCall(node),
             NodeKind.Property => EvalProperty(node),
             NodeKind.Index => EvalIndex(node),
+            NodeKind.Slice => EvalSlice(node),
             NodeKind.Unary => EvalUnary(node),
 
             NodeKind.Function => EvalFunction(node),
@@ -148,18 +149,41 @@ public sealed class Evaluator(Context context)
         if (node.Operator == TokenType.Wait)
             return EvalWait(node);
 
-        var value = Eval(node.Children[0]);
+        if (node.Operator == TokenType.Question)
+        {
+            Obj value;
+            try
+            {
+                value = Eval(node.Children[0]);
+            }
+            catch (Error e)
+            {
+                var err = new Err(e.Message, e.Header);
+                if (context.Frames.Count > 0)
+                    throw new PropagateFlow(err, node.Start, node.Length);
+                throw;
+            }
+            if (value is Err err2)
+            {
+                if (context.Frames.Count > 0)
+                    throw new PropagateFlow(err2, node.Start, node.Length);
+                throw new Error(err2.Message, node.Start, node.Length, context.Source, header: err2.Header);
+            }
+            return value;
+        }
+
+        var value2 = Eval(node.Children[0]);
 
         var result = node.Operator switch
         {
-            TokenType.Plus => value.Pos(),
-            TokenType.Minus => value.Neg(),
-            TokenType.Not => value.Not(),
-            TokenType.BNot => value.BNot(),
-            TokenType.Asterisk => value.Spread(),
+            TokenType.Plus => value2.Pos(),
+            TokenType.Minus => value2.Neg(),
+            TokenType.Not => value2.Not(),
+            TokenType.BNot => value2.BNot(),
+            TokenType.Asterisk => value2.Spread(),
             _ => throw new Error($"invalid unary operator {node.Operator}", node, context.Source)
         };
-     
+      
         return Unwrap(result, node);
     }
 
@@ -226,6 +250,16 @@ public sealed class Evaluator(Context context)
         var index = Eval(node.Children[1]);
 
         return Unwrap(target.GetItem(index), node);
+    }
+
+    private Obj EvalSlice(Node node)
+    {
+        var target = Eval(node.Children[0]);
+        Obj? startObj = node.Children.Count > 1 && node.Children[1] != null ? Eval(node.Children[1]) : null;
+        Obj? endObj = node.Children.Count > 2 && node.Children[2] != null ? Eval(node.Children[2]) : null;
+        Obj? stepObj = node.Children.Count > 3 && node.Children[3] != null ? Eval(node.Children[3]) : null;
+
+        return Unwrap(target.Slice(startObj, endObj, stepObj), node);
     }
 
     private Tup EvalArguments(Node tupleNode)
@@ -300,9 +334,14 @@ public sealed class Evaluator(Context context)
 
         context.PushFrame(new(GetText(node), context.Source, node.Start, node.Length));
 
-        result = Unwrap(callable.Call(args), node);
-
-        context.PopFrame();
+        try
+        {
+            result = Unwrap(callable.Call(args), node);
+        }
+        finally
+        {
+            context.PopFrame();
+        }
 
         return result;
     }
@@ -1040,6 +1079,56 @@ public sealed class Evaluator(Context context)
                     var index = Eval(pattern.Children[1]);
 
                     Unwrap(target.SetItem(index, value), pattern);
+                    break;
+                }
+            case NodeKind.Slice:
+                {
+                    var target = Eval(pattern.Children[0]);
+                    if (target is not List list)
+                        throw new Error("slice assignment only supports list", pattern, context.Source);
+
+                    Obj startObj = pattern.Children.Count > 1 && pattern.Children[1] != null ? Eval(pattern.Children[1]) : null!;
+                    Obj endObj = pattern.Children.Count > 2 && pattern.Children[2] != null ? Eval(pattern.Children[2]) : null!;
+                    Obj stepObj = pattern.Children.Count > 3 && pattern.Children[3] != null ? Eval(pattern.Children[3]) : null!;
+
+                    int start = 0, end = list.Count, step = 1;
+                    if (startObj != null)
+                    {
+                        if (!startObj.As<Int>(out var s)) throw new Error("slice start must be int", pattern, context.Source);
+                        start = (int)s.Value; if (start < 0) start += list.Count; start = Math.Clamp(start, 0, list.Count);
+                    }
+                    if (endObj != null)
+                    {
+                        if (!endObj.As<Int>(out var e)) throw new Error("slice end must be int", pattern, context.Source);
+                        end = (int)e.Value; if (end < 0) end += list.Count; end = Math.Clamp(end, 0, list.Count);
+                    }
+                    if (stepObj != null)
+                    {
+                        if (!stepObj.As<Int>(out var st)) throw new Error("slice step must be int", pattern, context.Source);
+                        step = (int)st.Value; if (step != 1) throw new Error("slice assignment with step != 1 not supported", pattern, context.Source);
+                    }
+                    if (end < start) end = start;
+                    int sliceLen = end - start;
+
+                    if (!value.ToList().As<List>(out var rhs))
+                        throw new Error("slice assignment value must be list", pattern, context.Source);
+
+                    int common = Math.Min(sliceLen, rhs.Count);
+
+                    for (int i = 0; i < common; i++)
+                        Unwrap(list.SetItem(Int.From(start + i), rhs[i]), pattern);
+
+                    for (int i = common; i < rhs.Count; i++)
+                    {
+                        var res = List.Insert(list, rhs[i], Int.From(start + i));
+                        if (res is Err err) throw new Error(err.Message, pattern, context.Source, header: err.Header);
+                    }
+
+                    for (int i = rhs.Count; i < sliceLen; i++)
+                    {
+                        var res = List.RemoveAt(list, Int.From(start + rhs.Count));
+                        if (res is Err err) throw new Error(err.Message, pattern, context.Source, header: err.Header);
+                    }
                     break;
                 }
             default:
